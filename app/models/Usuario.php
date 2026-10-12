@@ -250,3 +250,119 @@ class Usuario {
             'id' => $idUsuario
         ]);
     }
+
+    
+    /**
+     * Verificar si existe un nombre de usuario
+     */
+    public function existeUsuario($nombreUsuario, $idUsuarioExcluir = null) {
+        $sql = "SELECT COUNT(*) FROM usuario WHERE Usuario = :usuario";
+        
+        if ($idUsuarioExcluir) {
+            $sql .= " AND Id_Usuario != :id";
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $params = ['usuario' => $nombreUsuario];
+        
+        if ($idUsuarioExcluir) {
+            $params['id'] = $idUsuarioExcluir;
+        }
+        
+        $stmt->execute($params);
+        return $stmt->fetchColumn() > 0;
+    }
+    
+    /**
+     * Verificar si existe un correo
+     */
+    public function existeCorreo($correo, $idEmpleadoExcluir = null) {
+        $sql = "SELECT COUNT(*) FROM empleados WHERE Correo = :correo";
+        
+        if ($idEmpleadoExcluir) {
+            $sql .= " AND Id_Empleado != :id";
+        }
+        
+        $stmt = $this->pdo->prepare($sql);
+        $params = ['correo' => $correo];
+        
+        if ($idEmpleadoExcluir) {
+            $params['id'] = $idEmpleadoExcluir;
+        }
+        
+        $stmt->execute($params);
+        return $stmt->fetchColumn() > 0;
+    }
+    
+    /**
+     * Crear usuario (transacción: empleados + usuario)
+     */
+    public function crear($nombre, $apellidos, $correo, $nombreUsuario, $contrasena, $rol, $estado) {
+        // 1. Insertar en empleados
+        $sql = "INSERT INTO empleados (Nombre, Apellidos, Correo, Puesto, Estado, Fecha_Alta) 
+                VALUES (:nombre, :apellidos, :correo, :puesto, :estado, NOW())";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'nombre' => $nombre,
+            'apellidos' => $apellidos,
+            'correo' => $correo,
+            'puesto' => $rol,
+            'estado' => $estado
+        ]);
+        
+        $idEmpleado = $this->pdo->lastInsertId();
+        
+        // 2. Insertar en usuario
+        $passwordHash = password_hash($contrasena, PASSWORD_DEFAULT);
+        
+        $sql = "INSERT INTO usuario (Usuario, Password, Rol, Estado, Id_Empleado, Fecha_Alta, Intentos_Fallidos) 
+                VALUES (:usuario, :password, :rol, :estado, :id_empleado, NOW(), 0)";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'usuario' => $nombreUsuario,
+            'password' => $passwordHash,
+            'rol' => $rol,
+            'estado' => $estado,
+            'id_empleado' => $idEmpleado
+        ]);
+    }
+    
+    /**
+     * Editar usuario
+     */
+    public function editar($idUsuario, $nombre, $apellidos, $correo, $rol, $estado) {
+        // 1. Obtener Id_Empleado
+        $sql = "SELECT Id_Empleado FROM usuario WHERE Id_Usuario = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $idUsuario]);
+        $idEmpleado = $stmt->fetchColumn();
+        
+        // 2. Actualizar empleados
+        $sql = "UPDATE empleados 
+                SET Nombre = :nombre, Apellidos = :apellidos, Correo = :correo, Puesto = :puesto, Estado = :estado
+                WHERE Id_Empleado = :id";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'nombre' => $nombre,
+            'apellidos' => $apellidos,
+            'correo' => $correo,
+            'puesto' => $rol,
+            'estado' => $estado,
+            'id' => $idEmpleado
+        ]);
+        
+        // 3. Actualizar usuario
+        $sql = "UPDATE usuario 
+                SET Rol = :rol, Estado = :estado
+                WHERE Id_Usuario = :id";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'rol' => $rol,
+            'estado' => $estado,
+            'id' => $idUsuario
+        ]);
+    }
