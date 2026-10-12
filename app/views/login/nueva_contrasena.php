@@ -1,3 +1,0 @@
-﻿<?php
-// codigo + nueva contrasena
-
