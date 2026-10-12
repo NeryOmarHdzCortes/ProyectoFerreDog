@@ -579,3 +579,168 @@ body {
         padding: 20px;
     }
 }
+
+
+/* === PÁGINA DE RECUPERAR CONTRASEÑA === */
+.recuperar-body {
+    background-color: var(--gris-fondo);
+    padding: 40px 20px;
+}
+
+.recuperar-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.recuperar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.recuperar-titulo {
+    font-size: 32px;
+    font-weight: bold;
+    color: #111827;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.recuperar-subtitulo {
+    color: var(--gris);
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.recuperar-pasos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.tarjeta-paso {
+    background: white;
+    padding: 32px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.paso-deshabilitado {
+    opacity: 0.6;
+}
+
+.paso-completado {
+    background-color: #f0fdf4;
+    border: 2px solid var(--verde);
+}
+
+.paso-activo {
+    border: 2px solid var(--azul-boton);
+}
+
+.paso-numero {
+    background-color: var(--azul-boton);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.paso-completado .paso-numero {
+    background-color: var(--verde);
+}
+
+.paso-deshabilitado .paso-numero {
+    background-color: var(--gris);
+}
+
+.paso-titulo {
+    font-size: 20px;
+    font-weight: bold;
+    color: #111827;
+    margin-bottom: 20px;
+}
+
+.paso-completado-texto {
+    color: var(--verde);
+    font-weight: 600;
+    margin-top: 16px;
+}
+
+.paso-deshabilitado-texto {
+    color: var(--gris);
+    font-style: italic;
+    margin-top: 16px;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: var(--azul-boton);
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--fuente);
+}
+
+.link-button:hover {
+    text-decoration: underline;
+}
+
+/* Requisitos de contraseña */
+.requisitos-contrasena {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.requisitos-titulo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+#requisitos-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#requisitos-lista li {
+    font-size: 13px;
+    padding: 4px 0;
+}
+
+.requisito-cumplido {
+    color: var(--verde);
+    font-weight: 600;
+}
+
+.requisito-no-cumplido {
+    color: var(--rojo);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .recuperar-pasos {
+        grid-template-columns: 1fr;
+    }
+
+    .recuperar-header {
+        flex-direction: column;
+        gap: 16px;
+    }
+}
