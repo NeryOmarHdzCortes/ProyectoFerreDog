@@ -1,0 +1,2 @@
+﻿# Requisitos EARS del sprint
+

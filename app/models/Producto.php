@@ -1,0 +1,3 @@
+﻿<?php
+// tablas productos + inventario
+

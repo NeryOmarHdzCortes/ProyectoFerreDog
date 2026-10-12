@@ -1,0 +1,5 @@
+﻿# Archivos excluidos de Git
+.env
+vendor/
+*.log
+
