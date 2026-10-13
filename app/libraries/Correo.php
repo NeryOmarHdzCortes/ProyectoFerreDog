@@ -1,7 +1,7 @@
 <?php
 /**
  * Clase Correo
- * Envío del código de recuperación en modo prueba o SMTP
+ * Envío del código de recuperación en modo prueba o Gmail
  */
 
 class Correo {
@@ -20,11 +20,19 @@ class Correo {
      * @return array ['exito' => bool, 'mensaje' => string]
      */
     public function enviarCodigo($correo, $nombre, $codigo) {
-        if ($this->modo === 'smtp') {
-            return $this->enviarPorSMTP($correo, $nombre, $codigo);
-        } else {
+        if ($this->modo === 'prueba') {
             return $this->escribirEnLog($correo, $nombre, $codigo);
         }
+
+        if ($this->modo === 'gmail') {
+            return $this->enviarPorSMTP($correo, $nombre, $codigo);
+        }
+
+        error_log('Modo de correo no válido. Configura MAIL_MODO como "prueba" o "gmail".');
+        return [
+            'exito' => false,
+            'mensaje' => 'No se pudo enviar el correo. Intenta más tarde.'
+        ];
     }
     
     /**
@@ -60,66 +68,61 @@ class Correo {
     }
     
     /**
-     * Modo SMTP: enviar por Gmail con PHPMailer
-     * Solo se usará cuando PHPMailer esté instalado al final del proyecto
+     * Modo Gmail: enviar por SMTP con PHPMailer
      */
     private function enviarPorSMTP($correo, $nombre, $codigo) {
-        // Verificar que PHPMailer esté disponible
-        $rutaPHPMailer = BASE_PATH . '/app/libraries/PHPMailer/PHPMailer.php';
-        
-        if (!file_exists($rutaPHPMailer)) {
-            // PHPMailer no está instalado, registrar error y cambiar a modo log
-            $this->registrarError('PHPMailer no está instalado. Cambia MAIL_MODO a "prueba" en .env');
-            return $this->escribirEnLog($correo, $nombre, $codigo);
-        }
-        
+        $contraseñaSMTP = $_ENV['MAIL_PASS'] ?? '';
+        $usuarioSMTP = $_ENV['MAIL_USER'] ?? '';
+        $mail = null;
+
         try {
-            // Cargar PHPMailer
-            require_once BASE_PATH . '/app/libraries/PHPMailer/PHPMailer.php';
-            require_once BASE_PATH . '/app/libraries/PHPMailer/SMTP.php';
-            require_once BASE_PATH . '/app/libraries/PHPMailer/Exception.php';
-            
-            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
-            
-            // Configuración SMTP
+            require_once BASE_PATH . '/app/libraries/PHPMailer/src/Exception.php';
+            require_once BASE_PATH . '/app/libraries/PHPMailer/src/PHPMailer.php';
+            require_once BASE_PATH . '/app/libraries/PHPMailer/src/SMTP.php';
+
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             $mail->isSMTP();
             $mail->Host = $_ENV['MAIL_HOST'] ?? 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = $_ENV['MAIL_USER'] ?? '';
-            $mail->Password = $_ENV['MAIL_PASS'] ?? '';
-            $mail->SMTPSecure = 'tls';
-            $mail->Port = $_ENV['MAIL_PORT'] ?? 587;
+            $mail->Username = $usuarioSMTP;
+            $mail->Password = $contraseñaSMTP;
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = (int) ($_ENV['MAIL_PORT'] ?? 587);
             $mail->CharSet = 'UTF-8';
-            
-            // Remitente y destinatario
+
             $fromName = $_ENV['MAIL_FROM_NAME'] ?? 'Ferredog';
-            $mail->setFrom($_ENV['MAIL_USER'], $fromName);
+            $mail->setFrom($usuarioSMTP, $fromName);
             $mail->addAddress($correo, $nombre);
-            
-            // Contenido
+
+            $nombreSeguro = htmlspecialchars($nombre, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $codigoSeguro = htmlspecialchars($codigo, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             $mail->isHTML(true);
             $mail->Subject = 'Código de recuperación - Ferredog';
             $mail->Body = "
                 <h2>Recuperación de contraseña</h2>
-                <p>Hola {$nombre},</p>
-                <p>Tu código de recuperación es: <strong style='font-size: 24px;'>{$codigo}</strong></p>
+                <p>Hola {$nombreSeguro},</p>
+                <p>Tu código de recuperación es: <strong style='font-size: 24px;'>{$codigoSeguro}</strong></p>
                 <p>Este código vence en 10 minutos.</p>
                 <p>Si no solicitaste este código, ignora este correo.</p>
                 <hr>
                 <p style='font-size: 12px; color: #888;'>Ferredog - Control de inventario</p>
             ";
-            
+            $mail->AltBody = "Hola {$nombre}, tu código de recuperación es {$codigo}. "
+                . "Este código vence en 10 minutos. Si no solicitaste este código, ignora este correo.";
+
             $mail->send();
-            
+
             return [
                 'exito' => true,
                 'mensaje' => 'Código enviado. Revisa tu bandeja de entrada (vence en 10 min).'
             ];
-            
-        } catch (Exception $e) {
-            // Error al enviar
-            $this->registrarError("Error al enviar correo: {$mail->ErrorInfo}");
-            
+        } catch (\Throwable $e) {
+            $detalle = $e->getMessage();
+            if ($mail instanceof \PHPMailer\PHPMailer\PHPMailer && $mail->ErrorInfo !== '') {
+                $detalle .= ' ' . $mail->ErrorInfo;
+            }
+            $this->registrarError($detalle, [$contraseñaSMTP, $usuarioSMTP]);
+
             return [
                 'exito' => false,
                 'mensaje' => 'No se pudo enviar el correo. Intenta más tarde.'
@@ -130,11 +133,13 @@ class Correo {
     /**
      * Registrar error en el log
      */
-    private function registrarError($mensaje) {
-        $rutaLog = BASE_PATH . '/storage/logs/correos.log';
-        $fecha = date('Y-m-d H:i:s');
-        $linea = "[{$fecha}] ERROR: {$mensaje}\n";
-        
-        file_put_contents($rutaLog, $linea, FILE_APPEND);
+    private function registrarError($mensaje, $valoresSensibles = []) {
+        foreach ($valoresSensibles as $valorSensible) {
+            if ($valorSensible !== '') {
+                $mensaje = str_replace($valorSensible, '[redactado]', $mensaje);
+            }
+        }
+
+        error_log('Error al enviar correo: ' . $mensaje);
     }
 }
