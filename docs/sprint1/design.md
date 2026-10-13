@@ -131,6 +131,8 @@ ProyectoFerredog/
 ├── .gitignore
 ├── index.html                ya existía; no se modifica
 ├── docs/sprint1/             requirements.md, design.md, task.md, wireframes/
+├── sql/
+│   └── sprint1_mejoras_bd.sql  tabla rol, reglas, índices y vistas
 ├── config/
 │   └── database.php          lee .env sin composer y abre la conexión PDO
 ├── includes/
@@ -202,10 +204,25 @@ Id_Inventario, Existencias (int, default 0), Fecha_Entrada (date), Fecha_Salida 
 > `productos p LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto WHERE COALESCE(i.Existencias, 0) <= p.Stock_Minimo`
 
 ### `proveedor`
-Id_Proveedor, Nombre, Contacto, Telefono, Correo, Direccion, RFC (varchar 10, opcional, no se usa en el Sprint 1), Tipo, Estado (tinyint)
+Id_Proveedor, Nombre (UNIQUE), Contacto, Telefono, Correo (UNIQUE), Direccion, RFC (varchar 10, opcional, no se usa en el Sprint 1), Tipo, Estado (tinyint)
 
 ### `marcas`
 Id_Marca, Nombre (UNIQUE), Descripcion, Estado (tinyint)
+
+### `rol`
+Id_Rol, Nombre (UNIQUE): 'Administrador', 'Vendedor', 'Almacenista'.
+`usuario.Rol` tiene llave foránea a `rol.Nombre`: la base rechaza cualquier otro rol.
+
+### Reglas que valida la base (script `sql/sprint1_mejoras_bd.sql`)
+- `Estado` solo acepta 0 o 1 en usuario, empleados, productos, proveedor, categoria y marcas.
+- `productos.Precio_Venta` es NULL o mayor a 0; `Precio_Compra` es NULL o >= 0.
+- `productos.Stock_Minimo` >= 0 y `Stock_Maximo` >= `Stock_Minimo`; `inventario.Existencias` >= 0.
+- `proveedor.Nombre` y `proveedor.Correo` son UNIQUE.
+- El código valida todo esto ANTES de guardar (mensajes claros para el usuario). Si aun así
+  la base rechaza algo, se captura `PDOException` con código 23000, se hace rollBack y se
+  muestra un mensaje amigable (por ejemplo "Ya existe un proveedor con ese nombre o correo"),
+  nunca el error técnico.
+- Vistas disponibles para consultas: `vw_usuarios` y `vw_catalogo_productos` (el sistema no depende de ellas).
 
 ### Catálogos para combos
 - `categoria`: Id_Categoria, Nombre, Descripcion, Fecha_Creacion, Estado (tinyint) — en combos solo `Estado = 1`
@@ -253,7 +270,7 @@ Id_Marca, Nombre (UNIQUE), Descripcion, Estado (tinyint)
 - Productos existentes pueden tener `Id_Marca` NULL: en la lista se muestra "—" y al editar el campo Marca es obligatorio.
 
 ### HU-6 Gestión de proveedores
-- **Duplicados:** nombre y correo contra `proveedor` (al editar, excluyendo al mismo proveedor). La base no tiene UNIQUE en esas columnas: la validación es del controlador.
+- **Duplicados:** nombre y correo contra `proveedor` (al editar, excluyendo al mismo proveedor). La base también tiene UNIQUE en esas columnas; el controlador valida antes de guardar y captura el error 23000.
 - **Productos que surte:** `productos p LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto WHERE p.Id_Proveedor = ?`; rojo si `COALESCE(i.Existencias, 0) <= p.Stock_Minimo`.
 - **Desactivar:** `Estado = 0`. No se borra.
 - Filtro Estado: Activos (`1`), Inactivos (`0`), Todos.
