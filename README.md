@@ -4,7 +4,7 @@ Sistema web de control de inventario para una ferretería. Permite administrar u
 
 Proyecto de la materia **Desarrollo e Implementación de Sistemas de Información** — Instituto Tecnológico del Valle de Oaxaca.
 
-**Integrantes:** <Nombre 1>, <Nombre 2>, <Nombre 3>
+**Integrantes:** <Nery Omar Hernandez Cortes>, <Carlos  Gabriel Policarpo Sanchez>, <Alex Jimenez Martinez>,<Felipe De Jesus Antonio Ramirez >
 
 ---
 
