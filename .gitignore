@@ -3,3 +3,10 @@
 vendor/
 *.log
 
+# Archivos de asistentes de IA
+AGENTS.md
+.kiro/
+.github/copilot-instructions.md
+docs/sprint1/requirements.md
+docs/sprint1/design.md
+docs/sprint1/task.md
