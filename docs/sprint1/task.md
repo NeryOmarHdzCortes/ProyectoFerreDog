@@ -27,7 +27,7 @@ Reglas: cada vista debe seguir su wireframe de `docs/sprint1/wireframes/` (tabla
 
 ## HU-6 — Gestión de proveedores
 - [x] HU-6 T1 Crear las vistas `proveedores/lista.php` (W-08) y `proveedores/formulario.php` (W-09, con los modos Agregar, Ver y Editar y el panel "Productos que surte"), y `proveedores.js` (Req. 6)
-- [ ] HU-6 T2 Crear `ProveedorController.php` y completar `Proveedor.php`: registro, edición, búsqueda, desactivación y consulta de productos que surte, con validación de nombre o correo duplicado (Req. 6)
+- [x] HU-6 T2 Crear `ProveedorController.php` y completar `Proveedor.php`: registro, edición, búsqueda, desactivación y consulta de productos que surte, con validación de nombre o correo duplicado (Req. 6)
 
 ## Ajustes visuales
 - [ ] AV-1 `sidebar.php`: íconos como en `inicio.png` (cuadros, no emojis). `usuarios/lista.php`: botón "+ Agregar usuario" a la derecha con su tamaño normal, como en `usuarios_lista.png`

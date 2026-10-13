@@ -83,6 +83,92 @@ class Proveedor {
         
         return $stmt->fetch();
     }
+
+    /**
+     * Verificar si el nombre ya pertenece a otro proveedor
+     */
+    public function existeNombre($nombre, $idProveedorExcluir = null) {
+        $sql = "SELECT COUNT(*) FROM proveedor WHERE Nombre = :nombre";
+        $parametros = ['nombre' => $nombre];
+
+        if ($idProveedorExcluir !== null) {
+            $sql .= " AND Id_Proveedor != :id";
+            $parametros['id'] = $idProveedorExcluir;
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($parametros);
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * Verificar si el correo ya pertenece a otro proveedor
+     */
+    public function existeCorreo($correo, $idProveedorExcluir = null) {
+        $sql = "SELECT COUNT(*) FROM proveedor WHERE Correo = :correo";
+        $parametros = ['correo' => $correo];
+
+        if ($idProveedorExcluir !== null) {
+            $sql .= " AND Id_Proveedor != :id";
+            $parametros['id'] = $idProveedorExcluir;
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($parametros);
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    /**
+     * Registrar un proveedor activo
+     */
+    public function crear($nombre, $tipo, $contacto, $telefono, $correo, $direccion) {
+        $sql = "INSERT INTO proveedor (Nombre, Tipo, Contacto, Telefono, Correo, Direccion, Estado)
+                VALUES (:nombre, :tipo, :contacto, :telefono, :correo, :direccion, 1)";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'nombre' => $nombre,
+            'tipo' => $tipo,
+            'contacto' => $contacto,
+            'telefono' => $telefono,
+            'correo' => $correo,
+            'direccion' => $direccion
+        ]);
+    }
+
+    /**
+     * Actualizar los datos de un proveedor sin modificar su estado
+     */
+    public function editar($idProveedor, $nombre, $tipo, $contacto, $telefono, $correo, $direccion) {
+        $sql = "UPDATE proveedor
+                SET Nombre = :nombre,
+                    Tipo = :tipo,
+                    Contacto = :contacto,
+                    Telefono = :telefono,
+                    Correo = :correo,
+                    Direccion = :direccion
+                WHERE Id_Proveedor = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'nombre' => $nombre,
+            'tipo' => $tipo,
+            'contacto' => $contacto,
+            'telefono' => $telefono,
+            'correo' => $correo,
+            'direccion' => $direccion,
+            'id' => $idProveedor
+        ]);
+    }
+
+    /**
+     * Desactivar un proveedor conservando su registro
+     */
+    public function desactivar($idProveedor) {
+        $sql = "UPDATE proveedor SET Estado = 0 WHERE Id_Proveedor = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $idProveedor]);
+    }
     
     /**
      * Obtener productos que surte un proveedor
