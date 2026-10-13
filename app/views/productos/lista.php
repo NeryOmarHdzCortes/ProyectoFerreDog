@@ -230,6 +230,7 @@
                                    class="form-control" 
                                    step="0.01" 
                                    min="0.01"
+                                   required
                                    placeholder="0.00">
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * JavaScript para el módulo de productos (HU-5)
  */
 
@@ -29,9 +29,10 @@ function cerrarModalPrecio() {
  * Guardar precio (solo Administrador)
  */
 function guardarPrecio() {
-    const precio = parseFloat(document.getElementById('inputPrecioVenta').value);
+    const precio = document.getElementById('inputPrecioVenta').value.trim();
+    const precioNumerico = Number(precio);
 
-    if (!precio || precio <= 0) {
+    if (precio === '' || !Number.isFinite(precioNumerico) || precioNumerico <= 0) {
         alert('Por favor ingresa un precio válido mayor a 0.');
         return;
     }

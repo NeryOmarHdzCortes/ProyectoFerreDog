@@ -242,6 +242,16 @@ class Producto {
             'id' => $idProducto
         ]);
     }
+
+    /**
+     * Desactivar un producto conservando su registro
+     */
+    public function desactivar($idProducto) {
+        $sql = "UPDATE productos SET Estado = 0 WHERE Id_Producto = :id";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $idProducto]);
+    }
     
     /**
      * Contar productos en stock mínimo

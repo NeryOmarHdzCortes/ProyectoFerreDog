@@ -300,6 +300,80 @@ class ProductoController {
         $this->redirigir(self::URL_LISTA);
     }
 
+    /**
+     * Asignar o actualizar el precio de venta desde la lista
+     */
+    public function ponerPrecio() {
+        requerirRol(['Administrador']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $idProducto = $this->obtenerEntero($_POST['id_producto'] ?? null);
+
+        if ($idProducto === null || $idProducto <= 0) {
+            $_SESSION['mensaje_error'] = 'Producto no válido.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $precioRecibido = $_POST['precio'] ?? null;
+        $precioTexto = is_string($precioRecibido) ? trim($precioRecibido) : '';
+        $precioVenta = $precioTexto === '' ? false : filter_var($precioTexto, FILTER_VALIDATE_FLOAT);
+
+        if ($precioVenta === false || !is_finite($precioVenta) || $precioVenta <= 0) {
+            $_SESSION['mensaje_error'] = 'El precio de venta debe ser mayor a 0.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        if (!$this->modeloProducto->obtenerPorId($idProducto)) {
+            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        try {
+            $this->modeloProducto->asignarPrecio($idProducto, $precioVenta);
+            $_SESSION['mensaje_exito'] = 'Precio del producto actualizado correctamente.';
+        } catch (PDOException $e) {
+            error_log('Error al asignar precio al producto: ' . $e->getMessage());
+            $_SESSION['mensaje_error'] = 'No se pudo actualizar el precio. Intenta de nuevo.';
+        }
+
+        $this->redirigir(self::URL_LISTA);
+    }
+
+    /**
+     * Desactivar un producto sin eliminar sus datos
+     */
+    public function desactivar() {
+        requerirRol(['Administrador']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $idProducto = $this->obtenerEntero($_POST['id_producto'] ?? null);
+        if ($idProducto === null || $idProducto <= 0) {
+            $_SESSION['mensaje_error'] = 'Producto no válido.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        if (!$this->modeloProducto->obtenerPorId($idProducto)) {
+            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        try {
+            $this->modeloProducto->desactivar($idProducto);
+            $_SESSION['mensaje_exito'] = 'Producto desactivado correctamente.';
+        } catch (PDOException $e) {
+            error_log('Error al desactivar producto: ' . $e->getMessage());
+            $_SESSION['mensaje_error'] = 'No se pudo desactivar el producto. Intenta de nuevo.';
+        }
+
+        $this->redirigir(self::URL_LISTA);
+    }
+
     private function obtenerEntero($valor) {
         if (!is_scalar($valor)) {
             return null;
