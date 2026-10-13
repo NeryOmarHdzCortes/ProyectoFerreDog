@@ -21,7 +21,7 @@ Reglas: cada vista debe seguir su wireframe de `docs/sprint1/wireframes/` (tabla
 
 ## HU-5 — Gestionar catálogo de productos
 - [x] HU-5 T1 Vistas `productos/lista.php` (W-06) y `productos/formulario.php` (W-07), y `productos.js`
-- [ ] HU-5 T2 En `ProductoController.php` y `Producto.php`: acción `guardar` para registrar (transacción productos + inventario) y editar, con validación de campos obligatorios y de código duplicado; mensajes de éxito/error como en usuarios; paginación de 10 en 10 en la lista con el pie "Mostrando N de N productos · N en stock mínimo" (Req. 5.1 a 5.6)
+- [x] HU-5 T2 En `ProductoController.php` y `Producto.php`: acción `guardar` para registrar (transacción productos + inventario) y editar, con validación de campos obligatorios y de código duplicado; mensajes de éxito/error como en usuarios; paginación de 10 en 10 en la lista con el pie "Mostrando N de N productos · N en stock mínimo" (Req. 5.1 a 5.6)
 - [ ] HU-5 T3 Acciones `ponerPrecio` (precio mayor a 0) y `desactivar` (Estado = 0), solo Administrador, validado en el controlador; el Vendedor solo consulta (Req. 5.7 a 5.10)
 - [x] HU-5 T4 (Enc. Base de Datos) `productos.Precio_Venta` acepta NULL; tabla `marcas` y `productos.Id_Marca` creadas
 

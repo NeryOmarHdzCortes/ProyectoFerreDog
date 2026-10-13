@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Modelo Producto
  * Maneja las tablas productos e inventario
@@ -25,15 +25,45 @@ class Producto {
         return $estado === 'Activo' ? 1 : 0;
     }
     
+    private function construirFiltros($busqueda, $idCategoria, $idProveedor, $estado) {
+        $condiciones = " WHERE 1=1";
+        $parametros = [];
+
+        if ($busqueda !== '') {
+            $condiciones .= " AND (p.Nombre LIKE :busqueda1 OR p.Codigo_Barras LIKE :busqueda2)";
+            $parametros['busqueda1'] = "%{$busqueda}%";
+            $parametros['busqueda2'] = "%{$busqueda}%";
+        }
+
+        if ($idCategoria > 0) {
+            $condiciones .= " AND p.Id_Categoria = :categoria";
+            $parametros['categoria'] = $idCategoria;
+        }
+
+        if ($idProveedor > 0) {
+            $condiciones .= " AND p.Id_Proveedor = :proveedor";
+            $parametros['proveedor'] = $idProveedor;
+        }
+
+        if ($estado === 'Activo' || $estado === 'Inactivo') {
+            $condiciones .= " AND p.Estado = :estado";
+            $parametros['estado'] = $this->estadoANumero($estado);
+        }
+
+        return [$condiciones, $parametros];
+    }
+
     /**
-     * Obtener todos los productos con filtros de búsqueda
+     * Obtener una página de productos con filtros de búsqueda
      * @param string $busqueda Término de búsqueda (nombre o código)
      * @param int $idCategoria Filtro de categoría
      * @param int $idProveedor Filtro de proveedor
      * @param string $estado Filtro de estado
+     * @param int $pagina Número de página
+     * @param int $limite Productos por página
      * @return array Lista de productos con datos del JOIN
      */
-    public function obtenerTodos($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = '') {
+    public function obtenerTodos($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = '', $pagina = 1, $limite = 10) {
         $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta,
                        p.Stock_Minimo, p.Stock_Maximo,
                        m.Nombre AS Marca,
@@ -45,39 +75,38 @@ class Producto {
                 LEFT JOIN marcas m ON p.Id_Marca = m.Id_Marca
                 LEFT JOIN categoria c ON p.Id_Categoria = c.Id_Categoria
                 LEFT JOIN proveedor prov ON p.Id_Proveedor = prov.Id_Proveedor
-                LEFT JOIN inventario i ON p.Id_Producto = i.Id_Producto
-                WHERE 1=1";
-        
-        $params = [];
-        
-        if ($busqueda !== '') {
-            $sql .= " AND (p.Nombre LIKE :busqueda1 OR p.Codigo_Barras LIKE :busqueda2)";
-            $params['busqueda1'] = "%{$busqueda}%";
-            $params['busqueda2'] = "%{$busqueda}%";
-        }
-        
-        if ($idCategoria > 0) {
-            $sql .= " AND p.Id_Categoria = :categoria";
-            $params['categoria'] = $idCategoria;
-        }
-        
-        if ($idProveedor > 0) {
-            $sql .= " AND p.Id_Proveedor = :proveedor";
-            $params['proveedor'] = $idProveedor;
-        }
-        
-        if ($estado !== '') {
-            $estadoNumerico = $this->estadoANumero($estado);
-            $sql .= " AND p.Estado = :estado";
-            $params['estado'] = $estadoNumerico;
-        }
-        
-        $sql .= " ORDER BY p.Nombre";
-        
+                LEFT JOIN inventario i ON p.Id_Producto = i.Id_Producto";
+        list($condiciones, $parametros) = $this->construirFiltros($busqueda, $idCategoria, $idProveedor, $estado);
+        $pagina = max(1, (int) $pagina);
+        $limite = max(1, (int) $limite);
+        $sql .= $condiciones . " ORDER BY p.Nombre, p.Id_Producto LIMIT :limite OFFSET :desplazamiento";
+
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        
+        foreach ($parametros as $nombre => $valor) {
+            $tipo = is_int($valor) ? PDO::PARAM_INT : PDO::PARAM_STR;
+            $stmt->bindValue(':' . $nombre, $valor, $tipo);
+        }
+        $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+        $stmt->bindValue(':desplazamiento', ($pagina - 1) * $limite, PDO::PARAM_INT);
+        $stmt->execute();
+
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Contar productos que coinciden con los filtros de la lista
+     */
+    public function contarFiltrados($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = '') {
+        list($condiciones, $parametros) = $this->construirFiltros($busqueda, $idCategoria, $idProveedor, $estado);
+        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM productos p" . $condiciones);
+
+        foreach ($parametros as $nombre => $valor) {
+            $tipo = is_int($valor) ? PDO::PARAM_INT : PDO::PARAM_STR;
+            $stmt->bindValue(':' . $nombre, $valor, $tipo);
+        }
+
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
     }
     
     /**

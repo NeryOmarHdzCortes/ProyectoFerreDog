@@ -1,4 +1,8 @@
-﻿        <!-- Contenido principal -->
+<?php
+$datosProducto = $_SESSION['datos_producto'] ?? [];
+unset($_SESSION['datos_producto']);
+?>
+<!-- Contenido principal -->
         <main class="contenido-principal">
             <!-- Ruta de navegación -->
             <div class="ruta-navegacion">
@@ -38,7 +42,7 @@
                                    id="codigo" 
                                    name="codigo" 
                                    class="form-control" 
-                                   value="<?php echo htmlspecialchars($producto['Codigo_Barras'] ?? ($_POST['codigo'] ?? '')); ?>"
+                                   value="<?php echo htmlspecialchars($datosProducto['codigo'] ?? ($producto['Codigo_Barras'] ?? '')); ?>"
                                    required>
                         </div>
                         
@@ -48,7 +52,7 @@
                                    id="nombre" 
                                    name="nombre" 
                                    class="form-control" 
-                                   value="<?php echo htmlspecialchars($producto['Nombre'] ?? ($_POST['nombre'] ?? '')); ?>"
+                                   value="<?php echo htmlspecialchars($datosProducto['nombre'] ?? ($producto['Nombre'] ?? '')); ?>"
                                    required>
                         </div>
                     </div>
@@ -61,9 +65,7 @@
                                 <?php foreach ($marcas as $marca): ?>
                                     <option value="<?php echo $marca['Id_Marca']; ?>"
                                             <?php 
-                                            $seleccionado = $esEdicion 
-                                                ? ($producto['Id_Marca'] == $marca['Id_Marca']) 
-                                                : (($_POST['marca'] ?? '') == $marca['Id_Marca']);
+                                            $seleccionado = ($datosProducto['marca'] ?? ($producto['Id_Marca'] ?? '')) == $marca['Id_Marca'];
                                             echo $seleccionado ? 'selected' : ''; 
                                             ?>>
                                         <?php echo htmlspecialchars($marca['Nombre']); ?>
@@ -79,9 +81,7 @@
                                 <?php foreach ($categorias as $cat): ?>
                                     <option value="<?php echo $cat['Id_Categoria']; ?>"
                                             <?php 
-                                            $seleccionado = $esEdicion 
-                                                ? ($producto['Id_Categoria'] == $cat['Id_Categoria']) 
-                                                : (($_POST['categoria'] ?? '') == $cat['Id_Categoria']);
+                                            $seleccionado = ($datosProducto['categoria'] ?? ($producto['Id_Categoria'] ?? '')) == $cat['Id_Categoria'];
                                             echo $seleccionado ? 'selected' : ''; 
                                             ?>>
                                         <?php echo htmlspecialchars($cat['Nombre']); ?>
@@ -99,9 +99,7 @@
                                 <?php foreach ($proveedores as $prov): ?>
                                     <option value="<?php echo $prov['Id_Proveedor']; ?>"
                                             <?php 
-                                            $seleccionado = $esEdicion 
-                                                ? ($producto['Id_Proveedor'] == $prov['Id_Proveedor']) 
-                                                : (($_POST['proveedor'] ?? '') == $prov['Id_Proveedor']);
+                                            $seleccionado = ($datosProducto['proveedor'] ?? ($producto['Id_Proveedor'] ?? '')) == $prov['Id_Proveedor'];
                                             echo $seleccionado ? 'selected' : ''; 
                                             ?>>
                                         <?php echo htmlspecialchars($prov['Nombre']); ?>
@@ -117,9 +115,7 @@
                                 <?php foreach ($unidades as $unidad): ?>
                                     <option value="<?php echo $unidad['Id_Unidad']; ?>"
                                             <?php 
-                                            $seleccionado = $esEdicion 
-                                                ? ($producto['Id_Unidad'] == $unidad['Id_Unidad']) 
-                                                : (($_POST['unidad'] ?? '') == $unidad['Id_Unidad']);
+                                            $seleccionado = ($datosProducto['unidad'] ?? ($producto['Id_Unidad'] ?? '')) == $unidad['Id_Unidad'];
                                             echo $seleccionado ? 'selected' : ''; 
                                             ?>>
                                         <?php echo htmlspecialchars($unidad['Nombre']); ?>
@@ -150,7 +146,7 @@
                                        class="form-control" 
                                        step="0.01" 
                                        min="0"
-                                       value="<?php echo $producto['Precio_Venta'] ?? ($_POST['precio_venta'] ?? ''); ?>">
+                                       value="<?php echo htmlspecialchars($datosProducto['precio_venta'] ?? ($producto['Precio_Venta'] ?? '')); ?>">
                                 <small class="form-text text-muted">Solo el Administrador lo asigna</small>
                             <?php endif; ?>
                         </div>
@@ -169,7 +165,7 @@
                                        name="stock_inicial" 
                                        class="form-control" 
                                        min="0"
-                                       value="<?php echo $_POST['stock_inicial'] ?? ''; ?>"
+                                       value="<?php echo htmlspecialchars($datosProducto['stock_inicial'] ?? ''); ?>"
                                        required>
                             <?php endif; ?>
                         </div>
@@ -181,7 +177,7 @@
                                    name="stock_minimo" 
                                    class="form-control" 
                                    min="0"
-                                   value="<?php echo $producto['Stock_Minimo'] ?? ($_POST['stock_minimo'] ?? ''); ?>"
+                                   value="<?php echo htmlspecialchars($datosProducto['stock_minimo'] ?? ($producto['Stock_Minimo'] ?? '')); ?>"
                                    required>
                             <small class="form-text text-muted">Si la existencia es igual o menor, el producto se marca en rojo</small>
                         </div>
@@ -196,4 +192,3 @@
                 </div>
             </form>
         </main>
-

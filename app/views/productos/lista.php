@@ -1,4 +1,4 @@
-﻿        <!-- Contenido principal -->
+        <!-- Contenido principal -->
         <main class="contenido-principal">
             <div class="encabezado-pagina">
                 <div>
@@ -161,9 +161,54 @@
                 </div>
                 
                 <!-- Pie de tabla -->
-                <div class="tabla-pie">
-                    Mostrando <?php echo count($productos); ?> de <?php echo count($productos); ?> productos · 
-                    <?php echo $productosStockMinimo; ?> en stock mínimo
+                <div class="tabla-pie d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <span>
+                        Mostrando <?php echo count($productos); ?> de <?php echo $totalProductos; ?> productos ·
+                        <?php echo $productosStockMinimo; ?> en stock mínimo
+                    </span>
+                    <?php if ($totalPaginas > 1): ?>
+                        <?php
+                        $paginasVisibles = [1];
+                        for ($numero = max(2, $pagina - 1); $numero <= min($totalPaginas - 1, $pagina + 2); $numero++) {
+                            $paginasVisibles[] = $numero;
+                        }
+                        if ($totalPaginas > 1) {
+                            $paginasVisibles[] = $totalPaginas;
+                        }
+                        ?>
+                        <nav aria-label="Paginación de productos">
+                            <ul class="pagination mb-0">
+                                <li class="page-item <?php echo $pagina <= 1 ? 'disabled' : ''; ?>">
+                                    <?php if ($pagina <= 1): ?>
+                                        <span class="page-link" aria-hidden="true">&lsaquo;</span>
+                                    <?php else: ?>
+                                        <a class="page-link" href="<?php echo htmlspecialchars('/ProyectoFerredog/public/index.php?' . http_build_query(array_merge($parametrosPaginacion, ['pagina' => $pagina - 1])), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Página anterior">&lsaquo;</a>
+                                    <?php endif; ?>
+                                </li>
+                                <?php $paginaAnterior = 0; ?>
+                                <?php foreach ($paginasVisibles as $numero): ?>
+                                    <?php if ($paginaAnterior > 0 && $numero - $paginaAnterior > 1): ?>
+                                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                                    <?php endif; ?>
+                                    <li class="page-item <?php echo $numero === $pagina ? 'active' : ''; ?>">
+                                        <?php if ($numero === $pagina): ?>
+                                            <span class="page-link" aria-current="page"><?php echo $numero; ?></span>
+                                        <?php else: ?>
+                                            <a class="page-link" href="<?php echo htmlspecialchars('/ProyectoFerredog/public/index.php?' . http_build_query(array_merge($parametrosPaginacion, ['pagina' => $numero])), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $numero; ?></a>
+                                        <?php endif; ?>
+                                    </li>
+                                    <?php $paginaAnterior = $numero; ?>
+                                <?php endforeach; ?>
+                                <li class="page-item <?php echo $pagina >= $totalPaginas ? 'disabled' : ''; ?>">
+                                    <?php if ($pagina >= $totalPaginas): ?>
+                                        <span class="page-link" aria-hidden="true">&rsaquo;</span>
+                                    <?php else: ?>
+                                        <a class="page-link" href="<?php echo htmlspecialchars('/ProyectoFerredog/public/index.php?' . http_build_query(array_merge($parametrosPaginacion, ['pagina' => $pagina + 1])), ENT_QUOTES, 'UTF-8'); ?>" aria-label="Página siguiente">&rsaquo;</a>
+                                    <?php endif; ?>
+                                </li>
+                            </ul>
+                        </nav>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
@@ -217,4 +262,3 @@
             </div>
         </div>
         <?php endif; ?>
-
