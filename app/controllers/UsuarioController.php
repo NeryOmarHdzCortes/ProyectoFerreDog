@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Controlador de Usuarios (HU-4)
  * Solo accesible por Administrador
@@ -7,6 +7,7 @@
 require_once BASE_PATH . '/includes/auth.php';
 require_once BASE_PATH . '/config/database.php';
 require_once BASE_PATH . '/app/models/Usuario.php';
+require_once BASE_PATH . '/app/libraries/Validador.php';
 
 class UsuarioController {
     private $pdo;
@@ -122,78 +123,103 @@ class UsuarioController {
         $nombreUsuario = trim($_POST['nombre_usuario'] ?? '');
         $correo = trim($_POST['correo'] ?? '');
         $rol = $_POST['rol'] ?? '';
-        $estado = $_POST['estado'] ?? 'Activo';
+        $estado = $_POST['estado'] ?? 'Inactivo';
         $contrasena = $_POST['contrasena'] ?? '';
         $confirmarContrasena = $_POST['confirmar_contrasena'] ?? '';
 
         // Validaciones comunes
         $errores = [];
+        $erroresPorCampo = [];
 
-        if ($nombre === '') $errores[] = 'El nombre es obligatorio.';
-        if ($apellidos === '') $errores[] = 'Los apellidos son obligatorios.';
-        if ($correo === '' || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-            $errores[] = 'El correo electrónico no es válido.';
+        if ($nombre === '') {
+            $errores[] = 'El nombre es obligatorio.';
+            $erroresPorCampo['nombre'] = 'El nombre es obligatorio.';
+        }
+        if ($apellidos === '') {
+            $errores[] = 'Los apellidos son obligatorios.';
+            $erroresPorCampo['apellidos'] = 'Los apellidos son obligatorios.';
+        }
+        if (!Validador::correoValido($correo)) {
+            $mensajeCorreo = 'Escribe un correo válido, por ejemplo nombre@gmail.com.';
+            $errores[] = $mensajeCorreo;
+            $erroresPorCampo['correo'] = $mensajeCorreo;
         }
         if (!in_array($rol, self::ROLES_VALIDOS, true)) {
             $errores[] = 'El rol seleccionado no es válido.';
+            $erroresPorCampo['rol'] = 'El rol seleccionado no es válido.';
         }
         if (!in_array($estado, self::ESTADOS_VALIDOS, true)) {
             $errores[] = 'El estado seleccionado no es válido.';
+            $erroresPorCampo['estado'] = 'El estado seleccionado no es válido.';
         }
 
-        if ($idUsuario === 0) {
-            // Crear: nombre de usuario y contraseña
-            if ($nombreUsuario === '') {
-                $errores[] = 'El nombre de usuario es obligatorio.';
-            } elseif ($this->modeloUsuario->existeUsuario($nombreUsuario)) {
-                $errores[] = 'Este nombre de usuario ya existe.';
-            }
-
-            if ($contrasena === '') {
-                $errores[] = 'La contraseña es obligatoria.';
-            } elseif ($contrasena !== $confirmarContrasena) {
-                $errores[] = 'Las contraseñas no coinciden.';
-            } elseif (!$this->validarContrasenaSegura($contrasena)) {
-                $errores[] = 'La contraseña no cumple con los requisitos de seguridad.';
-            }
-
-            if ($this->modeloUsuario->existeCorreo($correo)) {
-                $errores[] = 'Este correo electrónico ya está registrado.';
-            }
-        } else {
-            // Editar: el usuario debe existir y el correo no puede ser de otro empleado
-            $idEmpleado = $this->modeloUsuario->obtenerIdEmpleado($idUsuario);
-
-            if (!$idEmpleado) {
-                $this->redirigir(self::URL_LISTA);
-            }
-
-            if ($this->modeloUsuario->existeCorreo($correo, $idEmpleado)) {
-                $errores[] = 'Este correo electrónico ya está registrado.';
-            }
-
-            // El administrador no puede quitarse su rol ni desactivarse a sí mismo
-            if ($idUsuario === (int) $_SESSION['Id_Usuario']) {
-                if ($rol !== 'Administrador') {
-                    $errores[] = 'No puedes quitarte el rol de Administrador.';
+        try {
+            if ($idUsuario === 0) {
+                // Crear: nombre de usuario y contraseña
+                if ($nombreUsuario === '') {
+                    $errores[] = 'El nombre de usuario es obligatorio.';
+                    $erroresPorCampo['nombre_usuario'] = 'El nombre de usuario es obligatorio.';
+                } elseif ($this->modeloUsuario->existeUsuario($nombreUsuario)) {
+                    $errores[] = 'Este nombre de usuario ya existe.';
+                    $erroresPorCampo['nombre_usuario'] = 'Este nombre de usuario ya existe.';
                 }
-                if ($estado !== 'Activo') {
-                    $errores[] = 'No puedes desactivar tu propia cuenta.';
+
+                if ($contrasena === '') {
+                    $errores[] = 'La contraseña es obligatoria.';
+                    $erroresPorCampo['contrasena'] = 'La contraseña es obligatoria.';
+                } elseif ($contrasena !== $confirmarContrasena) {
+                    $errores[] = 'Las contraseñas no coinciden.';
+                    $erroresPorCampo['contrasena'] = 'Las contraseñas no coinciden.';
+                    $erroresPorCampo['confirmar_contrasena'] = 'Las contraseñas no coinciden.';
+                } elseif (!$this->validarContrasenaSegura($contrasena)) {
+                    $errores[] = 'La contraseña no cumple con los requisitos de seguridad.';
+                    $erroresPorCampo['contrasena'] = 'La contraseña no cumple con los requisitos de seguridad.';
+                }
+
+                if (Validador::correoValido($correo) && $this->modeloUsuario->existeCorreo($correo)) {
+                    $errores[] = 'Este correo electrónico ya está registrado.';
+                    $erroresPorCampo['correo'] = 'Este correo electrónico ya está registrado.';
+                }
+            } else {
+                // Editar: el usuario debe existir y el correo no puede ser de otro empleado
+                $idEmpleado = $this->modeloUsuario->obtenerIdEmpleado($idUsuario);
+
+                if (!$idEmpleado) {
+                    $this->redirigir(self::URL_LISTA);
+                }
+
+                if (Validador::correoValido($correo) && $this->modeloUsuario->existeCorreo($correo, $idEmpleado)) {
+                    $errores[] = 'Este correo electrónico ya está registrado.';
+                    $erroresPorCampo['correo'] = 'Este correo electrónico ya está registrado.';
+                }
+
+                // El administrador no puede quitarse su rol ni desactivarse a sí mismo
+                if ($idUsuario === (int) $_SESSION['Id_Usuario']) {
+                    if ($rol !== 'Administrador') {
+                        $errores[] = 'No puedes quitarte el rol de Administrador.';
+                        $erroresPorCampo['rol'] = 'No puedes quitarte el rol de Administrador.';
+                    }
+                    if ($estado !== 'Activo') {
+                        $errores[] = 'No puedes desactivar tu propia cuenta.';
+                        $erroresPorCampo['estado'] = 'No puedes desactivar tu propia cuenta.';
+                    }
                 }
             }
+        } catch (Exception $e) {
+            error_log('Error al validar usuario: ' . $e->getMessage());
+            $mensaje = (string) $e->getCode() === '23000'
+                ? 'No se pudo validar el usuario porque alguno de sus datos ya está registrado.'
+                : 'No se pudo validar el usuario. Intenta de nuevo.';
+            $this->redirigirConError($this->obtenerDatosFormulario(), $mensaje, [], $idUsuario);
         }
 
         if (!empty($errores)) {
-            $_SESSION['mensaje_error'] = implode('<br>', $errores);
-            // No se guardan las contraseñas en sesión
-            $datos = $_POST;
-            unset($datos['contrasena'], $datos['confirmar_contrasena']);
-            $_SESSION['datos_formulario'] = $datos;
-
-            if ($idUsuario === 0) {
-                $this->redirigir('/ProyectoFerredog/public/index.php?c=usuario&a=crear');
-            }
-            $this->redirigir('/ProyectoFerredog/public/index.php?c=usuario&a=editar&id=' . $idUsuario);
+            $this->redirigirConError(
+                $this->obtenerDatosFormulario(),
+                implode(' ', array_unique($errores)),
+                $erroresPorCampo,
+                $idUsuario
+            );
         }
 
         // Escribe en empleados y usuario: todo o nada
@@ -202,10 +228,8 @@ class UsuarioController {
 
             if ($idUsuario === 0) {
                 $this->modeloUsuario->crear($nombre, $apellidos, $correo, $nombreUsuario, $contrasena, $rol, $estado);
-                $_SESSION['mensaje_exito'] = 'Usuario creado correctamente.';
             } else {
                 $this->modeloUsuario->editar($idUsuario, $nombre, $apellidos, $correo, $rol, $estado);
-                $_SESSION['mensaje_exito'] = 'Usuario actualizado correctamente.';
             }
 
             $this->pdo->commit();
@@ -214,10 +238,54 @@ class UsuarioController {
                 $this->pdo->rollBack();
             }
             error_log('Error al guardar usuario: ' . $e->getMessage());
-            $_SESSION['mensaje_error'] = 'No se pudo guardar el usuario. Intenta de nuevo.';
+            $mensaje = (string) $e->getCode() === '23000'
+                ? 'No se pudo guardar el usuario porque alguno de sus datos ya está registrado.'
+                : 'No se pudo guardar el usuario. Intenta de nuevo.';
+            $camposError = (string) $e->getCode() === '23000'
+                ? ['correo' => 'Revisa si el correo ya está registrado.', 'nombre_usuario' => 'Revisa si el usuario ya está registrado.']
+                : [];
+            if (strpos($e->getMessage(), 'chk_emp_nombre') !== false) {
+                $camposError = [
+                    'nombre' => 'Revisa el nombre capturado.',
+                    'apellidos' => 'Revisa los apellidos capturados.'
+                ];
+            }
+            $this->redirigirConError($this->obtenerDatosFormulario(), $mensaje, $camposError, $idUsuario);
         }
 
+        unset($_SESSION['old'], $_SESSION['error'], $_SESSION['error_campos']);
+        $_SESSION['mensaje_exito'] = $idUsuario === 0
+            ? 'Usuario creado correctamente.'
+            : 'Usuario actualizado correctamente.';
         $this->redirigir(self::URL_LISTA);
+    }
+
+    private function obtenerDatosFormulario() {
+        $campos = ['nombre', 'apellidos', 'nombre_usuario', 'correo', 'rol', 'estado'];
+        $datos = [];
+
+        foreach ($campos as $campo) {
+            if (isset($_POST[$campo]) && is_scalar($_POST[$campo])) {
+                $datos[$campo] = (string) $_POST[$campo];
+            }
+        }
+
+        if (!isset($datos['estado'])) {
+            $datos['estado'] = 'Inactivo';
+        }
+
+        return $datos;
+    }
+
+    private function redirigirConError(array $datos, string $mensaje, array $erroresPorCampo, int $idUsuario) {
+        $_SESSION['old'] = $datos;
+        $_SESSION['error'] = $mensaje;
+        $_SESSION['error_campos'] = $erroresPorCampo;
+
+        $url = $idUsuario > 0
+            ? '/ProyectoFerredog/public/index.php?c=usuario&a=editar&id=' . $idUsuario
+            : '/ProyectoFerredog/public/index.php?c=usuario&a=crear';
+        $this->redirigir($url);
     }
 
     /**

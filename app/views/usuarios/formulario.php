@@ -1,4 +1,4 @@
-﻿        <!-- Contenido principal -->
+        <!-- Contenido principal -->
         <main class="contenido-principal">
             <div class="ruta-navegacion">
                 <a href="/ProyectoFerredog/public/index.php?c=usuario&a=lista">Usuarios</a>
@@ -9,18 +9,23 @@
             <h1 class="titulo-pagina"><?php echo $accion === 'crear' ? 'Agregar usuario' : 'Editar usuario'; ?></h1>
             
             <?php
-            // Recuperar datos del formulario si hubo error
-            $datos = $_SESSION['datos_formulario'] ?? [];
-            unset($_SESSION['datos_formulario']);
-            
-            if ($accion === 'editar' && empty($datos)) {
-                $datos = $usuario;
-            }
+            $datosBase = $accion === 'editar' ? [
+                'nombre' => $usuario['Nombre'] ?? '',
+                'apellidos' => $usuario['Apellidos'] ?? '',
+                'nombre_usuario' => $usuario['Usuario'] ?? '',
+                'correo' => $usuario['Correo'] ?? '',
+                'rol' => $usuario['Rol'] ?? '',
+                'estado' => $usuario['Estado'] ?? 'Activo'
+            ] : ['estado' => 'Activo'];
+            $datos = array_merge($datosBase, $_SESSION['old'] ?? []);
+            $error = $_SESSION['error'] ?? $_SESSION['mensaje_error'] ?? '';
+            $erroresCampo = $_SESSION['error_campos'] ?? [];
+            unset($_SESSION['old'], $_SESSION['error'], $_SESSION['error_campos'], $_SESSION['mensaje_error']);
             ?>
             
-            <?php if (isset($_SESSION['mensaje_error'])): ?>
+            <?php if ($error !== ''): ?>
                 <div class="alerta-error">
-                    <?php echo $_SESSION['mensaje_error']; unset($_SESSION['mensaje_error']); ?>
+                    <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
                 </div>
             <?php endif; ?>
             
@@ -42,10 +47,13 @@
                                     type="text" 
                                     id="nombre" 
                                     name="nombre" 
-                                    class="form-control"
-                                    value="<?php echo htmlspecialchars($datos['Nombre'] ?? ''); ?>"
+                                    class="form-control<?php echo isset($erroresCampo['nombre']) ? ' is-invalid' : ''; ?>"
+                                    value="<?php echo htmlspecialchars($datos['nombre'], ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
+                                <?php if (isset($erroresCampo['nombre'])): ?>
+                                    <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['nombre'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
@@ -56,10 +64,13 @@
                                     type="text" 
                                     id="apellidos" 
                                     name="apellidos" 
-                                    class="form-control"
-                                    value="<?php echo htmlspecialchars($datos['Apellidos'] ?? ''); ?>"
+                                    class="form-control<?php echo isset($erroresCampo['apellidos']) ? ' is-invalid' : ''; ?>"
+                                    value="<?php echo htmlspecialchars($datos['apellidos'], ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
+                                <?php if (isset($erroresCampo['apellidos'])): ?>
+                                    <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['apellidos'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
@@ -70,13 +81,16 @@
                                     type="text" 
                                     id="nombre_usuario" 
                                     name="nombre_usuario" 
-                                    class="form-control"
-                                    value="<?php echo htmlspecialchars($datos['Usuario'] ?? ''); ?>"
+                                    class="form-control<?php echo isset($erroresCampo['nombre_usuario']) ? ' is-invalid' : ''; ?>"
+                                    value="<?php echo htmlspecialchars($datos['nombre_usuario'], ENT_QUOTES, 'UTF-8'); ?>"
                                     <?php echo $accion === 'editar' ? 'readonly' : ''; ?>
                                     required
                                 >
                                 <?php if ($accion === 'editar'): ?>
                                     <small class="form-text">El nombre de usuario no se puede cambiar</small>
+                                <?php endif; ?>
+                                <?php if (isset($erroresCampo['nombre_usuario'])): ?>
+                                    <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['nombre_usuario'], ENT_QUOTES, 'UTF-8'); ?></div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -88,22 +102,28 @@
                                     type="email" 
                                     id="correo" 
                                     name="correo" 
-                                    class="form-control"
-                                    value="<?php echo htmlspecialchars($datos['Correo'] ?? ''); ?>"
+                                    class="form-control<?php echo isset($erroresCampo['correo']) ? ' is-invalid' : ''; ?>"
+                                    value="<?php echo htmlspecialchars($datos['correo'], ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
+                                <small id="correo-error" class="form-text text-danger<?php echo isset($erroresCampo['correo']) ? ' d-block' : ''; ?>" role="alert" <?php echo isset($erroresCampo['correo']) ? '' : 'hidden'; ?>>
+                                    <?php echo htmlspecialchars($erroresCampo['correo'] ?? 'Escribe un correo válido, por ejemplo nombre@gmail.com.', ENT_QUOTES, 'UTF-8'); ?>
+                                </small>
                             </div>
                         </div>
                         
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="rol" class="form-label">Rol *</label>
-                                <select id="rol" name="rol" class="form-control" required>
+                                <select id="rol" name="rol" class="form-control<?php echo isset($erroresCampo['rol']) ? ' is-invalid' : ''; ?>" required>
                                     <option value="">Selecciona un rol</option>
-                                    <option value="Administrador" <?php echo ($datos['Rol'] ?? '') === 'Administrador' ? 'selected' : ''; ?>>Administrador</option>
-                                    <option value="Almacenista" <?php echo ($datos['Rol'] ?? '') === 'Almacenista' ? 'selected' : ''; ?>>Almacenista</option>
-                                    <option value="Vendedor" <?php echo ($datos['Rol'] ?? '') === 'Vendedor' ? 'selected' : ''; ?>>Vendedor</option>
+                                    <option value="Administrador" <?php echo $datos['rol'] === 'Administrador' ? 'selected' : ''; ?>>Administrador</option>
+                                    <option value="Almacenista" <?php echo $datos['rol'] === 'Almacenista' ? 'selected' : ''; ?>>Almacenista</option>
+                                    <option value="Vendedor" <?php echo $datos['rol'] === 'Vendedor' ? 'selected' : ''; ?>>Vendedor</option>
                                 </select>
+                                <?php if (isset($erroresCampo['rol'])): ?>
+                                    <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['rol'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -122,11 +142,14 @@
                                             type="password" 
                                             id="contrasena" 
                                             name="contrasena" 
-                                            class="form-control"
+                                            class="form-control<?php echo isset($erroresCampo['contrasena']) ? ' is-invalid' : ''; ?>"
                                             required
                                         >
                                         <span class="input-icon" id="toggleContrasena">👁️</span>
                                     </div>
+                                    <?php if (isset($erroresCampo['contrasena'])): ?>
+                                        <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['contrasena'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             
@@ -138,11 +161,14 @@
                                             type="password" 
                                             id="confirmar_contrasena" 
                                             name="confirmar_contrasena" 
-                                            class="form-control"
+                                            class="form-control<?php echo isset($erroresCampo['confirmar_contrasena']) ? ' is-invalid' : ''; ?>"
                                             required
                                         >
                                         <span class="input-icon" id="toggleConfirmar">👁️</span>
                                     </div>
+                                    <?php if (isset($erroresCampo['confirmar_contrasena'])): ?>
+                                        <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['confirmar_contrasena'], ENT_QUOTES, 'UTF-8'); ?></div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -169,12 +195,15 @@
                                     type="checkbox" 
                                     name="estado" 
                                     value="Activo"
-                                    <?php echo ($datos['Estado'] ?? 'Activo') === 'Activo' ? 'checked' : ''; ?>
+                                    <?php echo $datos['estado'] === 'Activo' ? 'checked' : ''; ?>
                                 >
                                 <span class="slider"></span>
                             </label>
                             <span class="switch-texto">Activo</span>
                         </label>
+                        <?php if (isset($erroresCampo['estado'])): ?>
+                            <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['estado'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
@@ -184,4 +213,3 @@
                 </div>
             </form>
         </main>
-

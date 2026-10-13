@@ -7,6 +7,7 @@
 require_once BASE_PATH . '/includes/auth.php';
 require_once BASE_PATH . '/config/database.php';
 require_once BASE_PATH . '/app/models/Proveedor.php';
+require_once BASE_PATH . '/app/libraries/Validador.php';
 
 class ProveedorController {
     private $pdo;
@@ -99,9 +100,23 @@ class ProveedorController {
             $idProveedor = $idValidado;
         }
 
-        if ($idProveedor > 0 && !$this->modeloProveedor->obtenerPorId($idProveedor)) {
-            $_SESSION['mensaje_error'] = 'Proveedor no encontrado.';
-            $this->redirigir(self::URL_LISTA);
+        if ($idProveedor > 0) {
+            try {
+                $proveedorExistente = $this->modeloProveedor->obtenerPorId($idProveedor);
+            } catch (Exception $e) {
+                error_log('Error al validar proveedor: ' . $e->getMessage());
+                $this->redirigirConErroresProveedor(
+                    ['No se pudo validar el proveedor. Intenta de nuevo.'],
+                    $idProveedor,
+                    [],
+                    []
+                );
+            }
+
+            if (!$proveedorExistente) {
+                $_SESSION['mensaje_error'] = 'Proveedor no encontrado.';
+                $this->redirigir(self::URL_LISTA);
+            }
         }
 
         $datosProveedor = [
@@ -113,39 +128,46 @@ class ProveedorController {
             'direccion' => $this->obtenerTexto($_POST['direccion'] ?? '')
         ];
         $errores = [];
+        $erroresPorCampo = [];
 
         if ($datosProveedor['nombre'] === '') {
             $errores[] = 'El nombre o razón social es obligatorio.';
+            $erroresPorCampo['nombre'] = 'El nombre o razón social es obligatorio.';
         }
         if (!in_array($datosProveedor['tipo'], self::TIPOS_VALIDOS, true)) {
             $errores[] = 'Selecciona un tipo de proveedor válido.';
+            $erroresPorCampo['tipo'] = 'Selecciona un tipo de proveedor válido.';
         }
         if ($datosProveedor['contacto'] === '') {
             $errores[] = 'La persona de contacto es obligatoria.';
+            $erroresPorCampo['contacto'] = 'La persona de contacto es obligatoria.';
         }
         if ($datosProveedor['telefono'] === '') {
             $errores[] = 'El teléfono es obligatorio.';
+            $erroresPorCampo['telefono'] = 'El teléfono es obligatorio.';
         }
-        if ($datosProveedor['correo'] === '') {
-            $errores[] = 'El correo electrónico es obligatorio.';
-        } elseif (!filter_var($datosProveedor['correo'], FILTER_VALIDATE_EMAIL)) {
-            $errores[] = 'El correo electrónico no es válido.';
+        if (!Validador::correoValido($datosProveedor['correo'])) {
+            $mensajeCorreo = 'Escribe un correo válido, por ejemplo nombre@gmail.com.';
+            $errores[] = $mensajeCorreo;
+            $erroresPorCampo['correo'] = $mensajeCorreo;
         }
 
         if (!empty($errores)) {
-            $this->redirigirConErroresProveedor($errores, $idProveedor, $datosProveedor);
+            $this->redirigirConErroresProveedor($errores, $idProveedor, $datosProveedor, $erroresPorCampo);
         }
 
         try {
             if ($this->modeloProveedor->existeNombre($datosProveedor['nombre'], $idProveedor ?: null)) {
                 $errores[] = 'Ya existe otro proveedor con ese nombre o razón social.';
+                $erroresPorCampo['nombre'] = 'Ya existe otro proveedor con ese nombre o razón social.';
             }
             if ($this->modeloProveedor->existeCorreo($datosProveedor['correo'], $idProveedor ?: null)) {
                 $errores[] = 'Ya existe otro proveedor con ese correo electrónico.';
+                $erroresPorCampo['correo'] = 'Ya existe otro proveedor con ese correo electrónico.';
             }
 
             if (!empty($errores)) {
-                $this->redirigirConErroresProveedor($errores, $idProveedor, $datosProveedor);
+                $this->redirigirConErroresProveedor($errores, $idProveedor, $datosProveedor, $erroresPorCampo);
             }
 
             if ($idProveedor === 0) {
@@ -171,7 +193,7 @@ class ProveedorController {
                 $_SESSION['mensaje_exito'] = 'Proveedor actualizado correctamente.';
             }
 
-            unset($_SESSION['datos_proveedor'], $_SESSION['errores']);
+            unset($_SESSION['old'], $_SESSION['error'], $_SESSION['error_campos']);
         } catch (PDOException $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -180,7 +202,10 @@ class ProveedorController {
             $mensaje = (string) $e->getCode() === '23000'
                 ? 'No se pudo guardar el proveedor porque el nombre o el correo ya está registrado.'
                 : 'No se pudo guardar el proveedor. Intenta de nuevo.';
-            $this->redirigirConErroresProveedor([$mensaje], $idProveedor, $datosProveedor);
+            $camposError = (string) $e->getCode() === '23000'
+                ? ['nombre' => 'Revisa si el nombre ya está registrado.', 'correo' => 'Revisa si el correo ya está registrado.']
+                : [];
+            $this->redirigirConErroresProveedor([$mensaje], $idProveedor, $datosProveedor, $camposError);
         } catch (Exception $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -189,7 +214,8 @@ class ProveedorController {
             $this->redirigirConErroresProveedor(
                 ['No se pudo guardar el proveedor. Intenta de nuevo.'],
                 $idProveedor,
-                $datosProveedor
+                $datosProveedor,
+                []
             );
         }
 
@@ -269,13 +295,27 @@ class ProveedorController {
         return $entero === false ? null : $entero;
     }
 
-    private function redirigirConErroresProveedor($errores, $idProveedor, $datosProveedor) {
-        $_SESSION['datos_proveedor'] = $datosProveedor;
-        $_SESSION['errores'] = $errores;
+    private function redirigirConErroresProveedor($errores, $idProveedor, $datosProveedor, $erroresPorCampo = []) {
+        $_SESSION['old'] = $this->obtenerDatosFormularioProveedor();
+        $_SESSION['error'] = implode(' ', array_unique($errores));
+        $_SESSION['error_campos'] = $erroresPorCampo;
         $url = $idProveedor > 0
             ? '/ProyectoFerredog/public/index.php?c=proveedor&a=editar&id=' . $idProveedor
             : self::URL_CREAR;
         $this->redirigir($url);
+    }
+
+    private function obtenerDatosFormularioProveedor() {
+        $campos = ['nombre', 'tipo', 'contacto', 'telefono', 'correo', 'direccion'];
+        $datos = [];
+
+        foreach ($campos as $campo) {
+            if (isset($_POST[$campo]) && is_scalar($_POST[$campo])) {
+                $datos[$campo] = (string) $_POST[$campo];
+            }
+        }
+
+        return $datos;
     }
 
     private function redirigir($url) {

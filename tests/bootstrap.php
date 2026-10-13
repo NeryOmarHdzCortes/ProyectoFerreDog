@@ -9,6 +9,7 @@ require_once BASE_PATH . '/app/models/Producto.php';
 require_once BASE_PATH . '/app/models/Proveedor.php';
 require_once BASE_PATH . '/app/models/Catalogo.php';
 require_once BASE_PATH . '/app/libraries/Correo.php';
+require_once BASE_PATH . '/app/libraries/Validador.php';
 $salidaDeCarga = ob_get_clean();
 $salidaDeCarga = preg_replace('/^(?:\xEF\xBB\xBF)+/', '', $salidaDeCarga);
 

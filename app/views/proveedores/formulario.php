@@ -4,15 +4,25 @@ $esAgregar = $modoFormulario === 'agregar';
 $esVista = $modoFormulario === 'ver';
 $esEdicion = $modoFormulario === 'editar';
 $soloLectura = $esVista;
-$datosFormulario = $_SESSION['datos_proveedor'] ?? [];
-unset($_SESSION['datos_proveedor']);
+$datosBase = [
+    'nombre' => $proveedor['Nombre'] ?? '',
+    'tipo' => $proveedor['Tipo'] ?? '',
+    'contacto' => $proveedor['Contacto'] ?? '',
+    'telefono' => $proveedor['Telefono'] ?? '',
+    'correo' => $proveedor['Correo'] ?? '',
+    'direccion' => $proveedor['Direccion'] ?? ''
+];
+$datosFormulario = array_merge($datosBase, $_SESSION['old'] ?? []);
+$error = $_SESSION['error'] ?? $_SESSION['mensaje_error'] ?? '';
+$erroresCampo = $_SESSION['error_campos'] ?? [];
+unset($_SESSION['old'], $_SESSION['error'], $_SESSION['error_campos'], $_SESSION['mensaje_error']);
 
-$nombreProveedor = $datosFormulario['nombre'] ?? ($proveedor['Nombre'] ?? '');
-$tipoProveedor = $datosFormulario['tipo'] ?? ($proveedor['Tipo'] ?? '');
-$contactoProveedor = $datosFormulario['contacto'] ?? ($proveedor['Contacto'] ?? '');
-$telefonoProveedor = $datosFormulario['telefono'] ?? ($proveedor['Telefono'] ?? '');
-$correoProveedor = $datosFormulario['correo'] ?? ($proveedor['Correo'] ?? '');
-$direccionProveedor = $datosFormulario['direccion'] ?? ($proveedor['Direccion'] ?? '');
+$nombreProveedor = $datosFormulario['nombre'];
+$tipoProveedor = $datosFormulario['tipo'];
+$contactoProveedor = $datosFormulario['contacto'];
+$telefonoProveedor = $datosFormulario['telefono'];
+$correoProveedor = $datosFormulario['correo'];
+$direccionProveedor = $datosFormulario['direccion'];
 $idProveedor = (int) ($proveedor['Id_Proveedor'] ?? 0);
 $tituloFormulario = $esAgregar ? 'Agregar proveedor' : ($nombreProveedor !== '' ? $nombreProveedor : 'Proveedor');
 $accionProductos = $esVista ? 'ver' : 'editar';
@@ -42,20 +52,10 @@ $busquedaProductos = $busquedaProductos ?? '';
             <?php echo htmlspecialchars($_SESSION['mensaje_exito'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['mensaje_exito']); ?>
         </div>
     <?php endif; ?>
-    <?php if (isset($_SESSION['mensaje_error'])): ?>
+    <?php if ($error !== ''): ?>
         <div class="alerta-error">
-            <?php echo htmlspecialchars($_SESSION['mensaje_error'], ENT_QUOTES, 'UTF-8'); unset($_SESSION['mensaje_error']); ?>
+            <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
         </div>
-    <?php endif; ?>
-    <?php if (isset($_SESSION['errores'])): ?>
-        <div class="alerta-error">
-            <ul class="mb-0">
-                <?php foreach ($_SESSION['errores'] as $error): ?>
-                    <li><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-        <?php unset($_SESSION['errores']); ?>
     <?php endif; ?>
 
     <div class="row g-3 align-items-stretch">
@@ -75,16 +75,19 @@ $busquedaProductos = $busquedaProductos ?? '';
                         type="text"
                         id="nombreProveedor"
                         name="nombre"
-                        class="form-control"
+                        class="form-control<?php echo isset($erroresCampo['nombre']) ? ' is-invalid' : ''; ?>"
                         value="<?php echo htmlspecialchars($nombreProveedor, ENT_QUOTES, 'UTF-8'); ?>"
                         <?php echo $soloLectura ? 'disabled' : 'required'; ?>
                     >
+                    <?php if (isset($erroresCampo['nombre'])): ?>
+                        <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['nombre'], ENT_QUOTES, 'UTF-8'); ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="form-grid-2col">
                     <div class="form-group">
                         <label for="tipoProveedor">Tipo *</label>
-                        <select id="tipoProveedor" name="tipo" class="form-control" <?php echo $soloLectura ? 'disabled' : 'required'; ?>>
+                        <select id="tipoProveedor" name="tipo" class="form-control<?php echo isset($erroresCampo['tipo']) ? ' is-invalid' : ''; ?>" <?php echo $soloLectura ? 'disabled' : 'required'; ?>>
                             <option value="">Selecciona un tipo</option>
                             <?php foreach (['Distribuidor', 'Mayorista', 'Fabricante'] as $tipo): ?>
                                 <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $tipoProveedor === $tipo ? 'selected' : ''; ?>>
@@ -92,6 +95,9 @@ $busquedaProductos = $busquedaProductos ?? '';
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                        <?php if (isset($erroresCampo['tipo'])): ?>
+                            <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['tipo'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label for="contactoProveedor">Persona de contacto *</label>
@@ -99,10 +105,13 @@ $busquedaProductos = $busquedaProductos ?? '';
                             type="text"
                             id="contactoProveedor"
                             name="contacto"
-                            class="form-control"
+                            class="form-control<?php echo isset($erroresCampo['contacto']) ? ' is-invalid' : ''; ?>"
                             value="<?php echo htmlspecialchars($contactoProveedor, ENT_QUOTES, 'UTF-8'); ?>"
                             <?php echo $soloLectura ? 'disabled' : 'required'; ?>
                         >
+                        <?php if (isset($erroresCampo['contacto'])): ?>
+                            <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['contacto'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -113,10 +122,13 @@ $busquedaProductos = $busquedaProductos ?? '';
                             type="tel"
                             id="telefonoProveedor"
                             name="telefono"
-                            class="form-control"
+                            class="form-control<?php echo isset($erroresCampo['telefono']) ? ' is-invalid' : ''; ?>"
                             value="<?php echo htmlspecialchars($telefonoProveedor, ENT_QUOTES, 'UTF-8'); ?>"
                             <?php echo $soloLectura ? 'disabled' : 'required'; ?>
                         >
+                        <?php if (isset($erroresCampo['telefono'])): ?>
+                            <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['telefono'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php endif; ?>
                     </div>
                     <div class="form-group">
                         <label for="correoProveedor">Correo electrónico *</label>
@@ -124,10 +136,13 @@ $busquedaProductos = $busquedaProductos ?? '';
                             type="email"
                             id="correoProveedor"
                             name="correo"
-                            class="form-control"
+                            class="form-control<?php echo isset($erroresCampo['correo']) ? ' is-invalid' : ''; ?>"
                             value="<?php echo htmlspecialchars($correoProveedor, ENT_QUOTES, 'UTF-8'); ?>"
                             <?php echo $soloLectura ? 'disabled' : 'required'; ?>
                         >
+                        <small id="correoProveedor-error" class="form-text text-danger<?php echo isset($erroresCampo['correo']) ? ' d-block' : ''; ?>" role="alert" <?php echo isset($erroresCampo['correo']) ? '' : 'hidden'; ?>>
+                            <?php echo htmlspecialchars($erroresCampo['correo'] ?? 'Escribe un correo válido, por ejemplo nombre@gmail.com.', ENT_QUOTES, 'UTF-8'); ?>
+                        </small>
                     </div>
                 </div>
 
@@ -136,10 +151,13 @@ $busquedaProductos = $busquedaProductos ?? '';
                     <textarea
                         id="direccionProveedor"
                         name="direccion"
-                        class="form-control"
+                        class="form-control<?php echo isset($erroresCampo['direccion']) ? ' is-invalid' : ''; ?>"
                         rows="2"
                         <?php echo $soloLectura ? 'disabled' : ''; ?>
                     ><?php echo htmlspecialchars($direccionProveedor, ENT_QUOTES, 'UTF-8'); ?></textarea>
+                    <?php if (isset($erroresCampo['direccion'])): ?>
+                        <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['direccion'], ENT_QUOTES, 'UTF-8'); ?></div>
+                    <?php endif; ?>
                 </div>
 
                 <?php if (!$esAgregar): ?>
