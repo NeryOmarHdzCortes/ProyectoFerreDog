@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     <div class="recuperar-container">
         <div class="recuperar-header">
             <div class="login-logo">
-                <div class="login-logo-icono">F</div>
+                <img class="login-logo-icono" src="/ProyectoFerredog/public/assets/img/logo.png" alt="Ferredog">
                 <span>FERREDOG</span>
             </div>
             <a href="/ProyectoFerredog/public/index.php?c=auth&a=login" class="link">← Volver a iniciar sesión</a>

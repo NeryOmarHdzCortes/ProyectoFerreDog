@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -11,7 +11,7 @@
         <!-- Panel izquierdo -->
         <div class="login-panel-izquierdo">
             <div class="login-logo">
-                <div class="login-logo-icono">F</div>
+                <img class="login-logo-icono" src="/ProyectoFerredog/public/assets/img/logo.png" alt="Ferredog">
                 <span>FERREDOG</span>
             </div>
             <h1 class="login-titulo">Control de inventario de la ferretería</h1>

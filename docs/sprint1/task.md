@@ -34,4 +34,4 @@ Reglas: cada vista debe seguir su wireframe de `docs/sprint1/wireframes/` (tabla
 
 ## Técnico — Pruebas integrales
 - [ ] Técnico T1 Probar cada requisito de requirements.md con los 3 roles y entregar una tabla: requisito / resultado / observación
-- [ ] Actualizar el README con: requisitos (XAMPP con Apache; MariaDB 12 aparte), configuración de `.env`, URL `http://localhost/ProyectoFerredog/public/`, usuarios de prueba, cómo probar la recuperación en modo prueba, y una sección "Activar el envío real por Gmail" (crear la cuenta, verificación en 2 pasos, contraseña de aplicación, copiar PHPMailer a `app/libraries/PHPMailer/`, llenar MAIL_* y cambiar `MAIL_MODO=smtp`)dd
+- [ ] Actualizar el README con: requisitos (XAMPP con Apache; MariaDB 12 aparte), configuración de `.env`, URL `http://localhost/ProyectoFerredog/public/`, usuarios de prueba, cómo probar la recuperación en modo prueba, y una sección "Activar el envío real por Gmail" (crear la cuenta, verificación en 2 pasos, contraseña de aplicación, copiar PHPMailer a `app/libraries/PHPMailer/`, llenar MAIL_* y cambiar `MAIL_MODO=smtp`)

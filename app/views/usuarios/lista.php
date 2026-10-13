@@ -1,11 +1,11 @@
-﻿        <!-- Contenido principal -->
+        <!-- Contenido principal -->
         <main class="contenido-principal">
             <div class="encabezado-pagina">
                 <div>
                     <h1 class="titulo-pagina">Usuarios</h1>
                     <p class="subtitulo-pagina">Controla quién accede al sistema y con qué rol</p>
                 </div>
-                <a href="/ProyectoFerredog/public/index.php?c=usuario&a=crear" class="btn btn-primary">
+                <a href="/ProyectoFerredog/public/index.php?c=usuario&a=crear" class="btn btn-primary btn-agregar-usuario">
                     + Agregar usuario
                 </a>
             </div>

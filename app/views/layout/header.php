@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -11,7 +11,7 @@
     <!-- Encabezado -->
     <header class="header-interno">
         <div class="header-logo">
-            <div class="logo-icono">F</div>
+            <img class="logo-icono" src="/ProyectoFerredog/public/assets/img/logo.png" alt="Ferredog">
             <span class="logo-texto">FERREDOG</span>
         </div>
         <div class="header-usuario">
