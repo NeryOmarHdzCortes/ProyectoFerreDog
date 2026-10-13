@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Modelo Proveedor
  * Maneja la tabla proveedor
@@ -88,7 +88,7 @@ class Proveedor {
      * Obtener productos que surte un proveedor
      */
     public function obtenerProductosQueSurte($idProveedor, $busqueda = '') {
-        $sql = "SELECT p.Codigo_Barras, p.Nombre, i.Existencias, p.Stock_Minimo
+        $sql = "SELECT p.Codigo_Barras, p.Nombre, COALESCE(i.Existencias, 0) AS Existencias, p.Stock_Minimo
                 FROM productos p
                 LEFT JOIN inventario i ON p.Id_Producto = i.Id_Producto
                 WHERE p.Id_Proveedor = :proveedor AND p.Estado = 1";
