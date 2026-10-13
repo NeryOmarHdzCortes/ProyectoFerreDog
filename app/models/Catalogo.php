@@ -15,16 +15,16 @@ class Catalogo {
      * Obtener todas las categorías activas
      */
     public function obtenerCategorias() {
-        $sql = "SELECT Id_Categoria, Nombre FROM categoria WHERE Estado = 'Activo' ORDER BY Nombre";
+        $sql = "SELECT Id_Categoria, Nombre FROM categoria WHERE Estado = 1 ORDER BY Nombre";
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll();
     }
     
     /**
-     * Obtener todas las marcas
+     * Obtener todas las marcas activas
      */
     public function obtenerMarcas() {
-        $sql = "SELECT Id_Marca, Nombre FROM marcas ORDER BY Nombre";
+        $sql = "SELECT Id_Marca, Nombre FROM marcas WHERE Estado = 1 ORDER BY Nombre";
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchAll();
     }

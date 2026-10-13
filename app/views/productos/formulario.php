@@ -1,3 +1,199 @@
-﻿<?php
-// registrar / editar producto
+﻿        <!-- Contenido principal -->
+        <main class="contenido-principal">
+            <!-- Ruta de navegación -->
+            <div class="ruta-navegacion">
+                <a href="/ProyectoFerredog/public/index.php?c=producto&a=lista">Productos</a>
+                <span> / </span>
+                <span><?php echo $esEdicion ? 'Editar producto' : 'Agregar producto'; ?></span>
+            </div>
+            
+            <h1 class="titulo-pagina"><?php echo $esEdicion ? 'Editar producto' : 'Agregar producto'; ?></h1>
+            
+            <?php if (isset($_SESSION['errores'])): ?>
+                <div class="alerta-error">
+                    <ul>
+                        <?php foreach ($_SESSION['errores'] as $error): ?>
+                            <li><?php echo htmlspecialchars($error); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php unset($_SESSION['errores']); ?>
+            <?php endif; ?>
+            
+            <form method="POST" 
+                  action="/ProyectoFerredog/public/index.php?c=producto&a=guardar" 
+                  class="formulario-producto">
+                
+                <?php if ($esEdicion): ?>
+                    <input type="hidden" name="id_producto" value="<?php echo $producto['Id_Producto']; ?>">
+                <?php endif; ?>
+                
+                <div class="seccion-card">
+                    <h2 class="subtitulo-seccion">Datos del producto</h2>
+                    
+                    <div class="form-grid-2col">
+                        <div class="form-group">
+                            <label for="codigo">Código *</label>
+                            <input type="text" 
+                                   id="codigo" 
+                                   name="codigo" 
+                                   class="form-control" 
+                                   value="<?php echo htmlspecialchars($producto['Codigo_Barras'] ?? ($_POST['codigo'] ?? '')); ?>"
+                                   required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nombre">Nombre del producto *</label>
+                            <input type="text" 
+                                   id="nombre" 
+                                   name="nombre" 
+                                   class="form-control" 
+                                   value="<?php echo htmlspecialchars($producto['Nombre'] ?? ($_POST['nombre'] ?? '')); ?>"
+                                   required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-grid-2col">
+                        <div class="form-group">
+                            <label for="marca">Marca *</label>
+                            <select id="marca" name="marca" class="form-control" required>
+                                <option value="">Selecciona una marca</option>
+                                <?php foreach ($marcas as $marca): ?>
+                                    <option value="<?php echo $marca['Id_Marca']; ?>"
+                                            <?php 
+                                            $seleccionado = $esEdicion 
+                                                ? ($producto['Id_Marca'] == $marca['Id_Marca']) 
+                                                : (($_POST['marca'] ?? '') == $marca['Id_Marca']);
+                                            echo $seleccionado ? 'selected' : ''; 
+                                            ?>>
+                                        <?php echo htmlspecialchars($marca['Nombre']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="categoria">Categoría *</label>
+                            <select id="categoria" name="categoria" class="form-control" required>
+                                <option value="">Selecciona una categoría</option>
+                                <?php foreach ($categorias as $cat): ?>
+                                    <option value="<?php echo $cat['Id_Categoria']; ?>"
+                                            <?php 
+                                            $seleccionado = $esEdicion 
+                                                ? ($producto['Id_Categoria'] == $cat['Id_Categoria']) 
+                                                : (($_POST['categoria'] ?? '') == $cat['Id_Categoria']);
+                                            echo $seleccionado ? 'selected' : ''; 
+                                            ?>>
+                                        <?php echo htmlspecialchars($cat['Nombre']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-grid-2col">
+                        <div class="form-group">
+                            <label for="proveedor">Proveedor * (solo activos)</label>
+                            <select id="proveedor" name="proveedor" class="form-control" required>
+                                <option value="">Selecciona un proveedor</option>
+                                <?php foreach ($proveedores as $prov): ?>
+                                    <option value="<?php echo $prov['Id_Proveedor']; ?>"
+                                            <?php 
+                                            $seleccionado = $esEdicion 
+                                                ? ($producto['Id_Proveedor'] == $prov['Id_Proveedor']) 
+                                                : (($_POST['proveedor'] ?? '') == $prov['Id_Proveedor']);
+                                            echo $seleccionado ? 'selected' : ''; 
+                                            ?>>
+                                        <?php echo htmlspecialchars($prov['Nombre']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="unidad">Unidad *</label>
+                            <select id="unidad" name="unidad" class="form-control" required>
+                                <option value="">Selecciona una unidad</option>
+                                <?php foreach ($unidades as $unidad): ?>
+                                    <option value="<?php echo $unidad['Id_Unidad']; ?>"
+                                            <?php 
+                                            $seleccionado = $esEdicion 
+                                                ? ($producto['Id_Unidad'] == $unidad['Id_Unidad']) 
+                                                : (($_POST['unidad'] ?? '') == $unidad['Id_Unidad']);
+                                            echo $seleccionado ? 'selected' : ''; 
+                                            ?>>
+                                        <?php echo htmlspecialchars($unidad['Nombre']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="seccion-card">
+                    <h2 class="subtitulo-seccion">Precio e inventario</h2>
+                    
+                    <div class="form-grid-3col">
+                        <div class="form-group">
+                            <label for="precio_venta">Precio de venta</label>
+                            <?php if ($_SESSION['Rol'] === 'Almacenista'): ?>
+                                <input type="text" 
+                                       id="precio_venta" 
+                                       class="form-control" 
+                                       value="Lo asigna el Administrador"
+                                       disabled>
+                                <input type="hidden" name="precio_venta" value="">
+                            <?php else: ?>
+                                <input type="number" 
+                                       id="precio_venta" 
+                                       name="precio_venta" 
+                                       class="form-control" 
+                                       step="0.01" 
+                                       min="0"
+                                       value="<?php echo $producto['Precio_Venta'] ?? ($_POST['precio_venta'] ?? ''); ?>">
+                                <small class="form-text text-muted">Solo el Administrador lo asigna</small>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="stock_inicial">Stock inicial *</label>
+                            <?php if ($esEdicion): ?>
+                                <input type="number" 
+                                       id="stock_inicial" 
+                                       class="form-control" 
+                                       value="<?php echo $producto['Existencias'] ?? 0; ?>"
+                                       disabled>
+                            <?php else: ?>
+                                <input type="number" 
+                                       id="stock_inicial" 
+                                       name="stock_inicial" 
+                                       class="form-control" 
+                                       min="0"
+                                       value="<?php echo $_POST['stock_inicial'] ?? ''; ?>"
+                                       required>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="stock_minimo">Stock mínimo *</label>
+                            <input type="number" 
+                                   id="stock_minimo" 
+                                   name="stock_minimo" 
+                                   class="form-control" 
+                                   min="0"
+                                   value="<?php echo $producto['Stock_Minimo'] ?? ($_POST['stock_minimo'] ?? ''); ?>"
+                                   required>
+                            <small class="form-text text-muted">Si la existencia es igual o menor, el producto se marca en rojo</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="/ProyectoFerredog/public/index.php?c=producto&a=lista" class="btn btn-outline-secondary">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </main>
 

@@ -173,27 +173,44 @@ ProyectoFerredog/
 - Sin parámetros: si hay sesión, va a inicio; si no, al login.
 - URL local en XAMPP: `http://localhost/ProyectoFerredog/public/`
 
-## Datos (nombres reales de la base `ferredog`)
+## Datos (estructura REAL de la base `ferredog`, verificada con DESCRIBE)
+
+**Regla general de Estado:** en TODAS las tablas, `Estado` es `tinyint(1)`: `1` = activo, `0` = inactivo.
+En consultas SQL usa siempre `Estado = 1` / `Estado = 0`, nunca `'Activo'`.
+El modelo traduce para las vistas: al leer usa `CASE WHEN Estado = 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado`
+y al guardar convierte `'Activo'` → `1`, `'Inactivo'` → `0` (ver `estadoANumero()` en `app/models/Usuario.php`).
 
 ### `usuario`
-Id_Usuario, Usuario (UNIQUE), Password, Rol, Fecha_Alta, Estado, Id_Empleado (UNIQUE),
-Intentos_Fallidos, Fecha_Bloqueo, Codigo_Recuperacion, Codigo_Expiracion
+Id_Usuario, Usuario (UNIQUE), Password, Rol (varchar: 'Administrador' | 'Vendedor' | 'Almacenista'), Fecha_Alta (datetime),
+Estado (tinyint), Intentos_Fallidos, Fecha_Bloqueo, Codigo_Recuperacion, Codigo_Expiracion, Id_Empleado (UNIQUE)
 
 ### `empleados` (plural)
-Id_Empleado, Nombre, Apellidos, Correo (UNIQUE), Telefono, Puesto, Fecha_Alta, Estado
+Id_Empleado, Nombre, Apellidos, Correo (UNIQUE), Telefono, Puesto, Fecha_Alta (date), Estado (tinyint)
 
 ### `productos`
 Id_Producto, Codigo_Barras (UNIQUE), Nombre, Descripcion, Precio_Venta (NULL = sin precio), Precio_Compra (NULL),
-Estado, Id_Categoria, Id_Unidad, Id_Proveedor, Id_Marca
+**Stock_Minimo** (int, default 5), **Stock_Maximo** (int, default 100), Fecha_Registro (date, default hoy),
+Estado (tinyint), Id_Categoria, Id_Unidad, Id_Proveedor (NULL), Id_Marca (NULL, FK a `marcas`)
+
+> El stock mínimo y máximo están en `productos`, NO en `inventario`.
 
 ### `inventario`
-Id_Inventario, Existencias, Fecha_Entrada, Fecha_Salida, Id_Producto (UNIQUE), Stock_Minimo, Stock_Maximo
+Id_Inventario, Existencias (int, default 0), Fecha_Entrada (date), Fecha_Salida (date), Id_Producto (UNIQUE)
+
+> Solo guarda existencias. **No todos los productos tienen fila en `inventario`** (hay más productos que filas de inventario).
+> Por eso SIEMPRE se une con `LEFT JOIN` y la existencia se lee como `COALESCE(i.Existencias, 0)`:
+> `productos p LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto WHERE COALESCE(i.Existencias, 0) <= p.Stock_Minimo`
 
 ### `proveedor`
-Id_Proveedor, Nombre, Contacto, Telefono, Correo, Direccion, Tipo, Estado
+Id_Proveedor, Nombre, Contacto, Telefono, Correo, Direccion, RFC (varchar 10, opcional, no se usa en el Sprint 1), Tipo, Estado (tinyint)
+
+### `marcas`
+Id_Marca, Nombre (UNIQUE), Descripcion, Estado (tinyint)
 
 ### Catálogos para combos
-`categoria` (Id_Categoria, Nombre, Estado), `marcas` (Id_Marca, Nombre), `unidad_medida` (Id_Unidad, Nombre, Abreviatura)
+- `categoria`: Id_Categoria, Nombre, Descripcion, Fecha_Creacion, Estado (tinyint) — en combos solo `Estado = 1`
+- `marcas`: Id_Marca, Nombre — en combos solo `Estado = 1`
+- `unidad_medida`: Id_Unidad, Nombre, Abreviatura (no tiene Estado)
 
 ## Reglas de lógica
 
@@ -205,7 +222,7 @@ Id_Proveedor, Nombre, Contacto, Telefono, Correo, Direccion, Tipo, Estado
 - Páginas internas envían `Cache-Control: no-store` para que "atrás" no muestre contenido tras cerrar sesión.
 
 ### HU-1 Recuperar contraseña
-- Buscar por `empleados.Correo` con JOIN a `usuario`, solo cuentas con Estado 'Activo'.
+- Buscar por `empleados.Correo` con JOIN a `usuario`, solo cuentas con `usuario.Estado = 1`.
 - Código de 6 dígitos con `random_int()`; se guarda con `password_hash()` en `Codigo_Recuperacion` y `Codigo_Expiracion = NOW() + 10 min`.
 - El Id del usuario en recuperación se guarda en `$_SESSION` entre el paso 1 y el paso 2.
 - La nueva contraseña y su confirmación deben coincidir.
@@ -217,26 +234,30 @@ Id_Proveedor, Nombre, Contacto, Telefono, Correo, Direccion, Tipo, Estado
 - Si `MAIL_MODO` es `smtp` y falta PHPMailer o falla el envío, se muestra "No se pudo enviar el correo, intenta más tarde" y se registra el error en `storage/logs/correos.log`.
 
 ### HU-4 Gestionar usuarios
-- **Crear = 2 inserts en una transacción:** primero `empleados` (Nombre, Apellidos, Correo, Puesto = rol, Estado), luego `usuario` (Usuario, Password con `password_hash()`, Rol, Estado, Id_Empleado con `lastInsertId()`). Si falla uno, `rollBack()`.
+- **Crear = 2 inserts en una transacción:** primero `empleados` (Nombre, Apellidos, Correo, Puesto = rol, Estado 1/0), luego `usuario` (Usuario, Password con `password_hash()`, Rol, Estado 1/0, Id_Empleado con `lastInsertId()`). Si falla uno, `rollBack()`.
 - **Editar:** nombre, apellidos y correo en `empleados`; rol y estado en `usuario`. El nombre de usuario no se edita.
 - **Listar/buscar:** `usuario JOIN empleados ON usuario.Id_Empleado = empleados.Id_Empleado`, con filtros de rol y estado.
 - **Duplicados:** usuario contra `usuario.Usuario`; correo contra `empleados.Correo` (al editar, excluyendo al mismo empleado).
 - El administrador no puede desactivarse a sí mismo ni quitarse su propio rol.
 
 ### HU-5 Gestionar productos
-- **Registrar = 2 inserts en una transacción:** `productos` (Precio_Venta capturado por el Administrador o NULL, Estado 'Activo') e `inventario` (Existencias = stock inicial, Stock_Minimo, Fecha_Entrada = hoy).
+- **Registrar = 2 inserts en una transacción:** `productos` (Codigo_Barras, Nombre, Id_Marca, Id_Categoria, Id_Proveedor, Id_Unidad, Stock_Minimo, Precio_Venta capturado por el Administrador o NULL, Estado = 1) e `inventario` (Id_Producto con `lastInsertId()`, Existencias = stock inicial, Fecha_Entrada = hoy).
 - Si quien guarda es Almacenista, el controlador ignora cualquier precio recibido.
-- **Editar:** datos del producto y stock mínimo; el Administrador también puede cambiar el precio. Las existencias no se editan.
-- **Lista:** JOIN de productos con inventario, categoria, marcas, proveedor y unidad_medida.
+- **Editar:** datos del producto y `productos.Stock_Minimo`; el Administrador también puede cambiar el precio. `inventario.Existencias` NO se edita.
+- **Lista:** `productos p LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto` (existencia = `COALESCE(i.Existencias, 0)`), `LEFT JOIN marcas m`, `JOIN categoria c`, `LEFT JOIN proveedor pr`, `JOIN unidad_medida u`. Columna "Mín." = `p.Stock_Minimo`. Fila en rojo si `COALESCE(i.Existencias, 0) <= p.Stock_Minimo`.
+- Filtro Estado: "Activos" → `p.Estado = 1` (por defecto), "Inactivos" → `p.Estado = 0`.
 - **Duplicados:** código contra `productos.Codigo_Barras` (al editar, excluyendo al mismo producto).
-- **Solo Administrador:** poner precio (mayor a 0) y desactivar. Se valida en el controlador, no solo ocultando botones.
+- **Solo Administrador:** poner precio (mayor a 0) y desactivar (`Estado = 0`). Se valida en el controlador, no solo ocultando botones.
 - **Vendedor:** solo puede ver la lista; cualquier otra acción se niega.
-- Combos: solo categorías y proveedores con Estado 'Activo'.
+- Combos: categorías, marcas y proveedores con `Estado = 1`; unidades todas.
+- Productos existentes pueden tener `Id_Marca` NULL: en la lista se muestra "—" y al editar el campo Marca es obligatorio.
 
 ### HU-6 Gestión de proveedores
-- **Duplicados:** nombre y correo contra `proveedor` (al editar, excluyendo al mismo proveedor).
-- **Productos que surte:** `productos JOIN inventario WHERE Id_Proveedor = ?`.
-- **Desactivar:** `Estado = 'Inactivo'`. No se borra.
+- **Duplicados:** nombre y correo contra `proveedor` (al editar, excluyendo al mismo proveedor). La base no tiene UNIQUE en esas columnas: la validación es del controlador.
+- **Productos que surte:** `productos p LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto WHERE p.Id_Proveedor = ?`; rojo si `COALESCE(i.Existencias, 0) <= p.Stock_Minimo`.
+- **Desactivar:** `Estado = 0`. No se borra.
+- Filtro Estado: Activos (`1`), Inactivos (`0`), Todos.
+- RFC no aparece en el wireframe W-09: no se captura ni se muestra en el Sprint 1.
 
 ### Seguridad general
 - Toda salida de datos en vistas con `htmlspecialchars()`.

@@ -11,6 +11,13 @@ class Usuario {
         $this->pdo = $pdo;
     }
 
+    /**
+     * Convertir estado texto a numérico
+     */
+    private function estadoANumero($estado) {
+        return $estado === 'Activo' ? 1 : 0;
+    }
+
     /* =========================================================
      * HU-1: Login y bloqueo
      * ========================================================= */
@@ -20,8 +27,9 @@ class Usuario {
      * @return array|false Datos del usuario si es válido, false si no
      */
     public function autenticar($nombreUsuario, $contrasena) {
-        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Password, u.Rol, u.Estado, u.Intentos_Fallidos,
-                       u.Fecha_Bloqueo, e.Nombre, e.Apellidos
+        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Password, u.Rol, u.Intentos_Fallidos,
+                       u.Fecha_Bloqueo, e.Nombre, e.Apellidos,
+                       CASE WHEN u.Estado = 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado
                 FROM usuario u
                 INNER JOIN empleados e ON u.Id_Empleado = e.Id_Empleado
                 WHERE u.Usuario = :usuario";
@@ -109,10 +117,10 @@ class Usuario {
      * @return array|false
      */
     public function buscarPorCorreo($correo) {
-        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Estado, e.Nombre, e.Apellidos, e.Correo
+        $sql = "SELECT u.Id_Usuario, u.Usuario, e.Nombre, e.Apellidos, e.Correo
                 FROM usuario u
                 INNER JOIN empleados e ON u.Id_Empleado = e.Id_Empleado
-                WHERE e.Correo = :correo AND u.Estado = 'Activo'";
+                WHERE e.Correo = :correo AND u.Estado = 1";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['correo' => $correo]);
@@ -156,12 +164,10 @@ class Usuario {
             return false;
         }
 
-        // Verificar si expiró
         if (time() > strtotime($usuario['Codigo_Expiracion'])) {
             return false; // Código expirado
         }
 
-        // Verificar el código
         return password_verify($codigo, $usuario['Codigo_Recuperacion']);
     }
 
@@ -196,7 +202,7 @@ class Usuario {
      * no permite repetir el mismo nombre de parámetro en una consulta.
      */
     public function obtenerTodos($busqueda = '', $rol = '', $estado = '') {
-        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Rol, u.Estado,
+        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Rol, CASE WHEN u.Estado = 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado,
                        e.Nombre, e.Apellidos, e.Correo
                 FROM usuario u
                 INNER JOIN empleados e ON u.Id_Empleado = e.Id_Empleado
@@ -216,9 +222,9 @@ class Usuario {
             $params['rol'] = $rol;
         }
 
-        if ($estado !== '') {
+        if ($estado === 'Activo' || $estado === 'Inactivo') {
             $sql .= " AND u.Estado = :estado";
-            $params['estado'] = $estado;
+            $params['estado'] = $this->estadoANumero($estado);
         }
 
         $sql .= " ORDER BY e.Nombre, e.Apellidos";
@@ -234,7 +240,7 @@ class Usuario {
      * @return array|false
      */
     public function obtenerPorId($idUsuario) {
-        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Rol, u.Estado, u.Id_Empleado,
+        $sql = "SELECT u.Id_Usuario, u.Usuario, u.Rol, CASE WHEN u.Estado = 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado, u.Id_Empleado,
                        e.Nombre, e.Apellidos, e.Correo
                 FROM usuario u
                 INNER JOIN empleados e ON u.Id_Empleado = e.Id_Empleado
@@ -310,7 +316,7 @@ class Usuario {
             'apellidos' => $apellidos,
             'correo' => $correo,
             'puesto' => $rol,
-            'estado' => $estado
+            'estado' => $this->estadoANumero($estado)
         ]);
 
         $idEmpleado = $this->pdo->lastInsertId();
@@ -324,7 +330,7 @@ class Usuario {
             'usuario' => $nombreUsuario,
             'password' => password_hash($contrasena, PASSWORD_DEFAULT),
             'rol' => $rol,
-            'estado' => $estado,
+            'estado' => $this->estadoANumero($estado),
             'id_empleado' => $idEmpleado
         ]);
     }
@@ -347,7 +353,7 @@ class Usuario {
             'apellidos' => $apellidos,
             'correo' => $correo,
             'puesto' => $rol,
-            'estado' => $estado,
+            'estado' => $this->estadoANumero($estado),
             'id' => $idEmpleado
         ]);
 
@@ -359,7 +365,7 @@ class Usuario {
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
             'rol' => $rol,
-            'estado' => $estado,
+            'estado' => $this->estadoANumero($estado),
             'id' => $idUsuario
         ]);
     }
@@ -372,7 +378,7 @@ class Usuario {
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
-            'estado' => $estado,
+            'estado' => $this->estadoANumero($estado),
             'id' => $idUsuario
         ]);
     }
