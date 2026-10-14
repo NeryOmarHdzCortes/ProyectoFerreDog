@@ -2,6 +2,11 @@
 
 class Validador
 {
+    public static function telefonoValido(string $tel): bool
+    {
+        return preg_match('/^[0-9]{10}$/', trim($tel)) === 1;
+    }
+
     public static function correoValido(string $correo): bool
     {
         $correo = strtolower(trim($correo));

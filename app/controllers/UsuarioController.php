@@ -80,6 +80,15 @@ class UsuarioController {
         $titulo = 'Agregar usuario - Ferredog';
         $scriptExtra = 'usuarios.js';
         $accion = 'crear';
+        $datos = [
+            'nombre' => '',
+            'apellidos' => '',
+            'nombre_usuario' => '',
+            'correo' => '',
+            'rol' => '',
+            'estado' => ''
+        ];
+        $datos = array_merge($datos, $_SESSION['old'] ?? []);
 
         require_once BASE_PATH . '/app/views/layout/header.php';
         require_once BASE_PATH . '/app/views/layout/sidebar.php';
@@ -96,6 +105,7 @@ class UsuarioController {
         $usuario = $this->modeloUsuario->obtenerPorId($idUsuario);
 
         if (!$usuario) {
+            $_SESSION['mensaje_error'] = 'Usuario no encontrado.';
             $this->redirigir(self::URL_LISTA);
         }
 

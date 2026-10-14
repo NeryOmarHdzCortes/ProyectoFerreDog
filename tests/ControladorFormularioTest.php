@@ -8,9 +8,9 @@ class ControladorFormularioTest extends TestCase
             $sufijo = $this->sufijoUnico();
             $datos = [
                 'id_usuario' => '0',
-                'nombre' => 'TEST_Nombre_' . $sufijo,
-                'apellidos' => 'TEST_Apellido_' . $sufijo,
-                'nombre_usuario' => 'TEST_Usuario_' . $sufijo,
+                'nombre' => 'Prueba',
+                'apellidos' => 'Automatica ' . strtolower($this->sufijoLetrasAleatorias()),
+                'nombre_usuario' => 'test_' . $sufijo,
                 'correo' => 'x@gmail.com.xd',
                 'rol' => 'Vendedor',
                 'estado' => 'Activo',
@@ -32,7 +32,7 @@ class ControladorFormularioTest extends TestCase
                 'nombre' => 'TEST_Proveedor_' . $sufijo,
                 'tipo' => 'Distribuidor',
                 'contacto' => 'TEST_Contacto_' . $sufijo,
-                'telefono' => 'TEST_Telefono_' . $sufijo,
+                'telefono' => '5550100125',
                 'correo' => 'x@dominio.xd',
                 'direccion' => 'TEST_Direccion_' . $sufijo
             ];
@@ -110,4 +110,3 @@ class ControladorFormularioTest extends TestCase
         }
     }
 }
-

@@ -16,8 +16,15 @@
                 'correo' => $usuario['Correo'] ?? '',
                 'rol' => $usuario['Rol'] ?? '',
                 'estado' => $usuario['Estado'] ?? 'Activo'
-            ] : ['estado' => 'Activo'];
-            $datos = array_merge($datosBase, $_SESSION['old'] ?? []);
+            ] : [
+                'nombre' => '',
+                'apellidos' => '',
+                'nombre_usuario' => '',
+                'correo' => '',
+                'rol' => '',
+                'estado' => ''
+            ];
+            $datos = array_merge($datosBase, $datos ?? [], $_SESSION['old'] ?? []);
             $error = $_SESSION['error'] ?? $_SESSION['mensaje_error'] ?? '';
             $erroresCampo = $_SESSION['error_campos'] ?? [];
             unset($_SESSION['old'], $_SESSION['error'], $_SESSION['error_campos'], $_SESSION['mensaje_error']);
@@ -31,7 +38,7 @@
             
             <form method="POST" action="/ProyectoFerredog/public/index.php?c=usuario&a=guardar" id="formUsuario">
                 <?php if ($accion === 'editar'): ?>
-                    <input type="hidden" name="id_usuario" value="<?php echo $usuario['Id_Usuario']; ?>">
+                    <input type="hidden" name="id_usuario" value="<?php echo $usuario['Id_Usuario'] ?? ''; ?>">
                 <?php else: ?>
                     <input type="hidden" name="id_usuario" value="0">
                 <?php endif; ?>
@@ -48,7 +55,7 @@
                                     id="nombre" 
                                     name="nombre" 
                                     class="form-control<?php echo isset($erroresCampo['nombre']) ? ' is-invalid' : ''; ?>"
-                                    value="<?php echo htmlspecialchars($datos['nombre'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    value="<?php echo htmlspecialchars($datos['nombre'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
                                 <?php if (isset($erroresCampo['nombre'])): ?>
@@ -65,7 +72,7 @@
                                     id="apellidos" 
                                     name="apellidos" 
                                     class="form-control<?php echo isset($erroresCampo['apellidos']) ? ' is-invalid' : ''; ?>"
-                                    value="<?php echo htmlspecialchars($datos['apellidos'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    value="<?php echo htmlspecialchars($datos['apellidos'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
                                 <?php if (isset($erroresCampo['apellidos'])): ?>
@@ -82,7 +89,7 @@
                                     id="nombre_usuario" 
                                     name="nombre_usuario" 
                                     class="form-control<?php echo isset($erroresCampo['nombre_usuario']) ? ' is-invalid' : ''; ?>"
-                                    value="<?php echo htmlspecialchars($datos['nombre_usuario'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    value="<?php echo htmlspecialchars($datos['nombre_usuario'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     <?php echo $accion === 'editar' ? 'readonly' : ''; ?>
                                     required
                                 >
@@ -103,7 +110,7 @@
                                     id="correo" 
                                     name="correo" 
                                     class="form-control<?php echo isset($erroresCampo['correo']) ? ' is-invalid' : ''; ?>"
-                                    value="<?php echo htmlspecialchars($datos['correo'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    value="<?php echo htmlspecialchars($datos['correo'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                                     required
                                 >
                                 <small id="correo-error" class="form-text text-danger<?php echo isset($erroresCampo['correo']) ? ' d-block' : ''; ?>" role="alert" <?php echo isset($erroresCampo['correo']) ? '' : 'hidden'; ?>>
@@ -117,9 +124,9 @@
                                 <label for="rol" class="form-label">Rol *</label>
                                 <select id="rol" name="rol" class="form-control<?php echo isset($erroresCampo['rol']) ? ' is-invalid' : ''; ?>" required>
                                     <option value="">Selecciona un rol</option>
-                                    <option value="Administrador" <?php echo $datos['rol'] === 'Administrador' ? 'selected' : ''; ?>>Administrador</option>
-                                    <option value="Almacenista" <?php echo $datos['rol'] === 'Almacenista' ? 'selected' : ''; ?>>Almacenista</option>
-                                    <option value="Vendedor" <?php echo $datos['rol'] === 'Vendedor' ? 'selected' : ''; ?>>Vendedor</option>
+                                    <option value="Administrador" <?php echo ($datos['rol'] ?? '') === 'Administrador' ? 'selected' : ''; ?>>Administrador</option>
+                                    <option value="Almacenista" <?php echo ($datos['rol'] ?? '') === 'Almacenista' ? 'selected' : ''; ?>>Almacenista</option>
+                                    <option value="Vendedor" <?php echo ($datos['rol'] ?? '') === 'Vendedor' ? 'selected' : ''; ?>>Vendedor</option>
                                 </select>
                                 <?php if (isset($erroresCampo['rol'])): ?>
                                     <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['rol'], ENT_QUOTES, 'UTF-8'); ?></div>
@@ -195,7 +202,7 @@
                                     type="checkbox" 
                                     name="estado" 
                                     value="Activo"
-                                    <?php echo $datos['estado'] === 'Activo' ? 'checked' : ''; ?>
+                                    <?php echo ($datos['estado'] ?? '') === 'Activo' ? 'checked' : ''; ?>
                                 >
                                 <span class="slider"></span>
                             </label>

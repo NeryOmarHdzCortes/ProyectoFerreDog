@@ -31,14 +31,14 @@ class ProveedorTest extends TestCase
                     $idPrimero,
                     $nombreEditado,
                     'Distribuidor',
-                    'TEST_Contacto_Editado',
-                    'TEST_5550101',
+                    'Contacto Editado',
+                    '5550100124',
                     $primero['correo'],
-                    'TEST_Direccion_Editada'
+                    'Direccion Editada'
                 );
                 $editado = $this->modelo->obtenerPorId($idPrimero);
                 $this->assertEquals($nombreEditado, $editado['Nombre']);
-                $this->assertEquals('TEST_Contacto_Editado', $editado['Contacto']);
+                $this->assertEquals('Contacto Editado', $editado['Contacto']);
             });
         });
 
@@ -95,16 +95,17 @@ class ProveedorTest extends TestCase
         $sufijo = $this->sufijoUnico();
         $proveedor = [
             'nombre' => 'TEST_Proveedor_' . $sufijo,
-            'correo' => 'TEST_' . $sufijo . '@example.invalid'
+            'correo' => 'test_' . $sufijo . '@gmail.com'
         ];
+        $this->assertTrue(Validador::correoValido($proveedor['correo']));
 
         $this->modelo->crear(
             $proveedor['nombre'],
             'Distribuidor',
-            'TEST_Contacto_' . $sufijo,
-            'TEST_5550100',
+            'Contacto Prueba',
+            '5550100123',
             $proveedor['correo'],
-            'TEST_Direccion_' . $sufijo
+            'Direccion Prueba'
         );
 
         return $proveedor;
@@ -142,4 +143,3 @@ class ProveedorTest extends TestCase
         return $referencias;
     }
 }
-

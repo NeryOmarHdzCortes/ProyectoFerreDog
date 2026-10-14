@@ -133,6 +133,16 @@ abstract class TestCase
         return date('YmdHis') . '_' . bin2hex(random_bytes(4));
     }
 
+    protected function sufijoLetrasAleatorias(int $longitud = 12): string
+    {
+        $sufijo = '';
+        for ($indice = 0; $indice < $longitud; $indice++) {
+            $sufijo .= chr(random_int(ord('A'), ord('Z')));
+        }
+
+        return $sufijo;
+    }
+
     private function verificar(bool $correcto, string $mensaje): void
     {
         if (!$correcto) {

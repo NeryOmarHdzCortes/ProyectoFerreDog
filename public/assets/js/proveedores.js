@@ -2,6 +2,47 @@
  * Interacciones de búsqueda y confirmación del módulo de proveedores.
  */
 document.addEventListener('DOMContentLoaded', function () {
+    const campoTelefono = document.getElementById('telefonoProveedor');
+    const errorTelefono = document.getElementById('telefonoProveedor-error');
+
+    if (campoTelefono && errorTelefono && campoTelefono.form) {
+        const telefonoValido = function () {
+            return /^[0-9]{10}$/.test(campoTelefono.value.trim());
+        };
+
+        const mostrarErrorTelefono = function () {
+            const valido = telefonoValido();
+            errorTelefono.hidden = valido;
+            errorTelefono.classList.toggle('d-block', !valido);
+            campoTelefono.classList.toggle('is-invalid', !valido);
+            campoTelefono.setAttribute('aria-invalid', valido ? 'false' : 'true');
+            return valido;
+        };
+
+        campoTelefono.addEventListener('input', function () {
+            campoTelefono.value = campoTelefono.value.replace(/[^0-9]/g, '').slice(0, 10);
+            if (!errorTelefono.hidden) {
+                mostrarErrorTelefono();
+            }
+        });
+        campoTelefono.form.addEventListener('submit', function (evento) {
+            if (!mostrarErrorTelefono()) {
+                evento.preventDefault();
+                evento.stopImmediatePropagation();
+                campoTelefono.focus();
+            }
+        });
+        campoTelefono.addEventListener('invalid', function (evento) {
+            if (!telefonoValido()) {
+                evento.preventDefault();
+                errorTelefono.hidden = false;
+                errorTelefono.classList.add('d-block');
+                campoTelefono.classList.add('is-invalid');
+                campoTelefono.setAttribute('aria-invalid', 'true');
+            }
+        });
+    }
+
     const campoCorreo = document.getElementById('correoProveedor');
     const errorCorreo = document.getElementById('correoProveedor-error');
 

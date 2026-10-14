@@ -142,11 +142,12 @@ class UsuarioTest extends TestCase
     {
         $sufijo = $this->sufijoUnico();
         $datos = [
-            'nombre' => 'TEST_Nombre_' . $sufijo,
-            'apellidos' => 'TEST_Apellido_' . $sufijo,
-            'correo' => 'TEST_' . $sufijo . '@example.invalid',
-            'usuario' => 'TEST_Usuario_' . $sufijo
+            'nombre' => 'Prueba',
+            'apellidos' => 'Automatica ' . strtolower($this->sufijoLetrasAleatorias()),
+            'correo' => 'test_' . $sufijo . '@gmail.com',
+            'usuario' => 'test_' . $sufijo
         ];
+        $this->assertTrue(Validador::correoValido($datos['correo']));
 
         $this->modelo->crear(
             $datos['nombre'],

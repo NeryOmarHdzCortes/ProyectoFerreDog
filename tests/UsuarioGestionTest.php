@@ -57,17 +57,37 @@ class UsuarioGestionTest extends TestCase
                 $this->assertEquals('Activo', $this->modelo->obtenerPorId($usuario['id'])['Estado']);
             });
         });
+
+        $this->probar('HU4-04', 'HU-4', 'La base rechaza nombres con símbolos', function () {
+            $this->enTransaccion(function () {
+                $sufijo = $this->sufijoUnico();
+                $error = $this->expectException(function () use ($sufijo) {
+                    $this->modelo->crear(
+                        'Sanchez(#',
+                        'Automatica ' . strtolower($this->sufijoLetrasAleatorias()),
+                        'test_' . $sufijo . '@gmail.com',
+                        'test_' . $sufijo,
+                        'Prueba#2026',
+                        'Vendedor',
+                        'Activo'
+                    );
+                }, PDOException::class);
+
+                $this->assertEquals('23000', (string) $error->getCode());
+            });
+        });
     }
 
     private function crearUsuario(): array
     {
         $sufijo = $this->sufijoUnico();
         $datos = [
-            'nombre' => 'TEST_Nombre_' . $sufijo,
-            'apellidos' => 'TEST_Apellido_' . $sufijo,
-            'correo' => 'TEST_' . $sufijo . '@example.invalid',
-            'usuario' => 'TEST_Usuario_' . $sufijo
+            'nombre' => 'Prueba',
+            'apellidos' => 'Automatica ' . strtolower($this->sufijoLetrasAleatorias()),
+            'correo' => 'test_' . $sufijo . '@gmail.com',
+            'usuario' => 'test_' . $sufijo
         ];
+        $this->assertTrue(Validador::correoValido($datos['correo']));
 
         $this->modelo->crear(
             $datos['nombre'],

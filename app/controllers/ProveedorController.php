@@ -61,6 +61,15 @@ class ProveedorController {
         $scriptExtra = 'proveedores.js';
         $modoFormulario = 'agregar';
         $proveedor = null;
+        $datosFormulario = [
+            'nombre' => '',
+            'tipo' => '',
+            'contacto' => '',
+            'telefono' => '',
+            'correo' => '',
+            'direccion' => ''
+        ];
+        $datosFormulario = array_merge($datosFormulario, $_SESSION['old'] ?? []);
 
         require_once BASE_PATH . '/app/views/layout/header.php';
         require_once BASE_PATH . '/app/views/layout/sidebar.php';
@@ -142,9 +151,10 @@ class ProveedorController {
             $errores[] = 'La persona de contacto es obligatoria.';
             $erroresPorCampo['contacto'] = 'La persona de contacto es obligatoria.';
         }
-        if ($datosProveedor['telefono'] === '') {
-            $errores[] = 'El teléfono es obligatorio.';
-            $erroresPorCampo['telefono'] = 'El teléfono es obligatorio.';
+        if (!Validador::telefonoValido($datosProveedor['telefono'])) {
+            $mensajeTelefono = 'El teléfono debe tener 10 dígitos, solo números.';
+            $errores[] = $mensajeTelefono;
+            $erroresPorCampo['telefono'] = $mensajeTelefono;
         }
         if (!Validador::correoValido($datosProveedor['correo'])) {
             $mensajeCorreo = 'Escribe un correo válido, por ejemplo nombre@gmail.com.';
@@ -199,12 +209,18 @@ class ProveedorController {
                 $this->pdo->rollBack();
             }
             error_log('Error al guardar proveedor: ' . $e->getMessage());
-            $mensaje = (string) $e->getCode() === '23000'
-                ? 'No se pudo guardar el proveedor porque el nombre o el correo ya está registrado.'
-                : 'No se pudo guardar el proveedor. Intenta de nuevo.';
-            $camposError = (string) $e->getCode() === '23000'
-                ? ['nombre' => 'Revisa si el nombre ya está registrado.', 'correo' => 'Revisa si el correo ya está registrado.']
-                : [];
+            $esTelefonoInvalido = (string) $e->getCode() === '23000'
+                && strpos($e->getMessage(), 'chk_prov_telefono') !== false;
+            $mensaje = $esTelefonoInvalido
+                ? 'El teléfono debe tener 10 dígitos, solo números.'
+                : ((string) $e->getCode() === '23000'
+                    ? 'No se pudo guardar el proveedor porque el nombre o el correo ya está registrado.'
+                    : 'No se pudo guardar el proveedor. Intenta de nuevo.');
+            $camposError = $esTelefonoInvalido
+                ? ['telefono' => 'El teléfono debe tener 10 dígitos, solo números.']
+                : ((string) $e->getCode() === '23000'
+                    ? ['nombre' => 'Revisa si el nombre ya está registrado.', 'correo' => 'Revisa si el correo ya está registrado.']
+                    : []);
             $this->redirigirConErroresProveedor([$mensaje], $idProveedor, $datosProveedor, $camposError);
         } catch (Exception $e) {
             if ($this->pdo->inTransaction()) {
