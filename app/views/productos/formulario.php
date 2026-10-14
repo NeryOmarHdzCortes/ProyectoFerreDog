@@ -132,23 +132,13 @@ unset($_SESSION['datos_producto']);
                     <div class="form-grid-3col">
                         <div class="form-group">
                             <label for="precio_venta">Precio de venta</label>
-                            <?php if ($_SESSION['Rol'] === 'Almacenista'): ?>
-                                <input type="text" 
-                                       id="precio_venta" 
-                                       class="form-control" 
-                                       value="Lo asigna el Administrador"
-                                       disabled>
-                                <input type="hidden" name="precio_venta" value="">
-                            <?php else: ?>
-                                <input type="number" 
-                                       id="precio_venta" 
-                                       name="precio_venta" 
-                                       class="form-control" 
-                                       step="0.01" 
-                                       min="0"
-                                       value="<?php echo htmlspecialchars($datosProducto['precio_venta'] ?? ($producto['Precio_Venta'] ?? '')); ?>">
-                                <small class="form-text text-muted">Solo el Administrador lo asigna</small>
-                            <?php endif; ?>
+                            <input type="number"
+                                   id="precio_venta"
+                                   name="precio_venta"
+                                   class="form-control"
+                                   step="0.01"
+                                   min="0"
+                                   value="<?php echo htmlspecialchars($datosProducto['precio_venta'] ?? ($producto['Precio_Venta'] ?? '')); ?>">
                         </div>
                         
                         <div class="form-group">

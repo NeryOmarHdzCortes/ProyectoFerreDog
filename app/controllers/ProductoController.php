@@ -231,7 +231,7 @@ class ProductoController {
         }
 
         $precioVenta = null;
-        if ($_SESSION['Rol'] === 'Administrador') {
+        if (in_array($_SESSION['Rol'], ['Administrador', 'Almacenista'], true)) {
             $precioCapturado = $this->obtenerTexto($_POST['precio_venta'] ?? '');
             if ($precioCapturado !== '') {
                 if (!is_numeric($precioCapturado) || !is_finite((float) $precioCapturado) || (float) $precioCapturado <= 0) {
@@ -239,6 +239,8 @@ class ProductoController {
                 } else {
                     $precioVenta = (float) $precioCapturado;
                 }
+            } elseif ($productoActual && $_SESSION['Rol'] === 'Almacenista') {
+                $precioVenta = $productoActual['Precio_Venta'];
             }
         } elseif ($productoActual) {
             $precioVenta = $productoActual['Precio_Venta'];
@@ -304,7 +306,7 @@ class ProductoController {
      * Asignar o actualizar el precio de venta desde la lista
      */
     public function ponerPrecio() {
-        requerirRol(['Administrador']);
+        requerirRol(['Administrador', 'Almacenista']);
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirigir(self::URL_LISTA);

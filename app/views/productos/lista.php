@@ -137,13 +137,15 @@
                                                         Editar
                                                     </a>
                                                     
-                                                    <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
+                                                    <?php if (in_array($_SESSION['Rol'], ['Administrador', 'Almacenista'], true)): ?>
                                                         <button type="button" 
                                                                 class="btn btn-sm btn-success"
                                                                 onclick="abrirModalPrecio(<?php echo $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES); ?>', <?php echo $producto['Precio_Venta'] ?? 0; ?>)">
                                                             Poner precio
                                                         </button>
-                                                        
+                                                    <?php endif; ?>
+
+                                                    <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
                                                         <button type="button" 
                                                                 class="btn btn-sm btn-secondary"
                                                                 onclick="confirmarDesactivar(<?php echo $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES); ?>')">
@@ -213,8 +215,8 @@
             </div>
         </main>
         
-        <!-- Modal para poner precio (solo Administrador) -->
-        <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
+        <!-- Modal para poner precio -->
+        <?php if (in_array($_SESSION['Rol'], ['Administrador', 'Almacenista'], true)): ?>
         <div id="modalPrecio" class="modal" style="display: none;">
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
