@@ -76,7 +76,7 @@ class ProveedorTest extends TestCase
                         $referencias['unidad'],
                         50.00,
                         1,
-                        0
+                        1
                     );
                     $nombres[] = $nombre;
                 }

@@ -92,3 +92,36 @@ window.onclick = function (event) {
         cerrarModalDesactivar();
     }
 };
+
+const formularioProducto = document.querySelector('.formulario-producto');
+const campoStockMinimo = document.getElementById('stock_minimo');
+const mensajeStockMinimo = document.getElementById('stock_minimo_error');
+
+if (formularioProducto && campoStockMinimo && mensajeStockMinimo) {
+    const textoErrorStockMinimo = 'El stock mínimo debe ser un número entero mayor a 0.';
+
+    const validarStockMinimo = () => {
+        const valor = campoStockMinimo.value.trim();
+        const invalido = valor === '' || !Number.isInteger(Number(valor)) || Number(valor) < 1;
+
+        mensajeStockMinimo.textContent = invalido ? textoErrorStockMinimo : '';
+        mensajeStockMinimo.hidden = !invalido;
+        campoStockMinimo.setAttribute('aria-invalid', invalido ? 'true' : 'false');
+
+        return !invalido;
+    };
+
+    campoStockMinimo.addEventListener('invalid', (event) => {
+        event.preventDefault();
+        validarStockMinimo();
+    });
+
+    campoStockMinimo.addEventListener('input', validarStockMinimo);
+
+    formularioProducto.addEventListener('submit', (event) => {
+        if (!validarStockMinimo()) {
+            event.preventDefault();
+            campoStockMinimo.focus();
+        }
+    });
+}

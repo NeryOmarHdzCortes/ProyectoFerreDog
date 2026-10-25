@@ -102,9 +102,33 @@ class ProductoTest extends TestCase
                 $this->assertEquals(0, (int) $lista[0]['Existencias']);
             });
         });
+
+        $this->probar('HU5-06', 'HU-5', 'Stock mínimo cero es rechazado', function () {
+            $this->enTransaccion(function () {
+                $error = $this->expectException(function () {
+                    $this->crearProducto(null, null, 0);
+                }, PDOException::class);
+                $this->assertEquals('23000', (string) $error->getCode());
+            });
+        });
+
+        $this->probar('HU5-07', 'HU-5', 'Stock mínimo uno es aceptado', function () {
+            $this->enTransaccion(function () {
+                $producto = $this->crearProducto(null, null, 1);
+                $consulta = $this->pdo->prepare(
+                    'SELECT Stock_Minimo FROM productos WHERE Id_Producto = :id'
+                );
+                $consulta->execute(['id' => $producto['id']]);
+                $this->assertEquals(1, (int) $consulta->fetchColumn());
+            });
+        });
     }
 
-    private function crearProducto(?string $nombre = null, ?string $codigo = null): array
+    private function crearProducto(
+        ?string $nombre = null,
+        ?string $codigo = null,
+        int $stockMinimo = 2
+    ): array
     {
         $sufijo = $this->sufijoUnico();
         $producto = [
@@ -121,7 +145,7 @@ class ProductoTest extends TestCase
             $this->referencias['unidad'],
             100.00,
             7,
-            2
+            $stockMinimo
         );
 
         $consulta = $this->pdo->prepare(
@@ -155,4 +179,3 @@ class ProductoTest extends TestCase
         return $referencias;
     }
 }
-

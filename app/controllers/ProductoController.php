@@ -215,8 +215,8 @@ class ProductoController {
             $errores[] = 'La unidad seleccionada no es válida.';
         }
 
-        if ($stockMinimo === null || $stockMinimo < 0) {
-            $errores[] = 'El stock mínimo debe ser un número entero igual o mayor a 0.';
+        if ($stockMinimo === null || $stockMinimo < 1) {
+            $errores[] = 'El stock mínimo debe ser un número entero mayor a 0.';
         } else {
             $stockMaximo = $productoActual
                 ? (int) $productoActual['Stock_Maximo']
@@ -287,9 +287,15 @@ class ProductoController {
                 $this->pdo->rollBack();
             }
             error_log('Error al guardar producto: ' . $e->getMessage());
-            $mensaje = (string) $e->getCode() === '23000'
-                ? 'No se pudo guardar el producto porque el código ya existe o algún dato seleccionado dejó de estar disponible.'
-                : 'No se pudo guardar el producto. Intenta de nuevo.';
+            $esRechazoStockMinimo = (string) $e->getCode() === '23000'
+                && stripos($e->getMessage(), 'chk_prod_stock') !== false;
+            if ($esRechazoStockMinimo) {
+                $mensaje = 'El stock mínimo debe ser un número entero mayor a 0.';
+            } else {
+                $mensaje = (string) $e->getCode() === '23000'
+                    ? 'No se pudo guardar el producto porque el código ya existe o algún dato seleccionado dejó de estar disponible.'
+                    : 'No se pudo guardar el producto. Intenta de nuevo.';
+            }
             $this->redirigirConErrores([$mensaje], $idProducto);
         } catch (Exception $e) {
             if ($this->pdo->inTransaction()) {

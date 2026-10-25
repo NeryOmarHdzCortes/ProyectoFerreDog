@@ -166,9 +166,12 @@ unset($_SESSION['datos_producto']);
                                    id="stock_minimo" 
                                    name="stock_minimo" 
                                    class="form-control" 
-                                   min="0"
+                                   min="1"
+                                   step="1"
                                    value="<?php echo htmlspecialchars($datosProducto['stock_minimo'] ?? ($producto['Stock_Minimo'] ?? '')); ?>"
-                                   required>
+                                   required
+                                   title="El stock mínimo debe ser un número entero mayor a 0.">
+                            <small id="stock_minimo_error" class="form-text text-danger" role="alert" hidden></small>
                             <small class="form-text text-muted">Si la existencia es igual o menor, el producto se marca en rojo</small>
                         </div>
                     </div>
