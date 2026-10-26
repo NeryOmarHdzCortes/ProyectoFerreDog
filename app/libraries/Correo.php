@@ -81,6 +81,70 @@ class Correo {
 
         return $this->enviarNotificacionSMTP($correo, $proveedor, $asunto, $cuerpoHtml, $cuerpoTexto);
     }
+
+    /**
+     * Envía al proveedor el detalle del pedido ya guardado.
+     */
+    public function enviarPedido($correo, $proveedor, $idPedido, $fecha, $renglones, $total) {
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            error_log('No se envió el pedido: el correo del proveedor no es válido.');
+            return false;
+        }
+
+        $idPedido = (int) $idPedido;
+        $asunto = 'Ferredog - Pedido #' . $idPedido;
+        $proveedorSeguro = htmlspecialchars($proveedor, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $filasHtml = '';
+        $filasTexto = [];
+        foreach ($renglones as $renglon) {
+            $nombreProducto = (string) ($renglon['producto'] ?? '');
+            $nombreSeguro = htmlspecialchars($nombreProducto, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $cantidad = (int) ($renglon['cantidad'] ?? 0);
+            $costo = number_format((float) ($renglon['costo'] ?? 0), 2, '.', ',');
+            $subtotal = number_format((float) ($renglon['subtotal'] ?? 0), 2, '.', ',');
+            $filasHtml .= '<tr><td>' . $nombreSeguro . '</td><td>' . $cantidad
+                . '</td><td>$' . $costo . '</td><td>$' . $subtotal . '</td></tr>';
+            $filasTexto[] = $nombreProducto . ' | ' . $cantidad . ' | $' . $costo . ' | $' . $subtotal;
+        }
+
+        $totalFormateado = number_format((float) $total, 2, '.', ',');
+        $cuerpoHtml = '<h2>Pedido #' . $idPedido . '</h2>'
+            . '<p>Hola ' . $proveedorSeguro . ',</p><p>Fecha: '
+            . htmlspecialchars($fecha, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+            . '<table border="1" cellpadding="6" cellspacing="0">'
+            . '<thead><tr><th>Producto</th><th>Cantidad</th><th>Costo</th><th>Subtotal</th></tr></thead>'
+            . '<tbody>' . $filasHtml . '</tbody></table>'
+            . '<p><strong>Total: $' . $totalFormateado . '</strong></p>';
+        $cuerpoTexto = "Pedido #{$idPedido} para {$proveedor}. Fecha: {$fecha}.\n"
+            . "Producto | Cantidad | Costo | Subtotal\n" . implode("\n", $filasTexto)
+            . "\nTotal: $" . $totalFormateado;
+
+        if ($this->modo === 'prueba') {
+            $rutaLog = BASE_PATH . '/storage/logs/correos.log';
+            $directorio = dirname($rutaLog);
+            if (!is_dir($directorio) && !mkdir($directorio, 0755, true) && !is_dir($directorio)) {
+                error_log('No se pudo crear el directorio del log de correos.');
+                return false;
+            }
+
+            $linea = '[' . date('Y-m-d H:i:s') . '] ' . $asunto . ' para ' . $correo
+                . ' (' . $proveedor . "), fecha {$fecha}\n"
+                . implode("\n", $filasTexto) . "\nTotal: $" . $totalFormateado . PHP_EOL;
+            if (file_put_contents($rutaLog, $linea, FILE_APPEND | LOCK_EX) === false) {
+                error_log('No se pudo escribir el pedido en el log de correos.');
+                return false;
+            }
+
+            return true;
+        }
+
+        if ($this->modo !== 'gmail') {
+            error_log('Modo de correo no válido. Configura MAIL_MODO como "prueba" o "gmail".');
+            return false;
+        }
+
+        return $this->enviarNotificacionSMTP($correo, $proveedor, $asunto, $cuerpoHtml, $cuerpoTexto);
+    }
     
     /**
      * Modo prueba: escribir en storage/logs/correos.log

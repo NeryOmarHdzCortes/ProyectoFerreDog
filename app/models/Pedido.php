@@ -52,4 +52,47 @@ class Pedido {
 
         return $consulta->fetch();
     }
+
+    /**
+     * Lista proveedores activos para el formulario de pedidos.
+     */
+    public function listarProveedoresActivos() {
+        $sql = "SELECT Id_Proveedor, Nombre, Correo
+                FROM proveedor
+                WHERE Estado = 1
+                ORDER BY Nombre";
+
+        return $this->pdo->query($sql)->fetchAll();
+    }
+
+    /**
+     * Consulta los productos activos que surte un proveedor.
+     */
+    public function listarProductosActivosPorProveedor($idProveedor) {
+        $sql = "SELECT p.Id_Producto, p.Nombre, m.Nombre AS Marca,
+                       COALESCE(i.Existencias, 0) AS Existencias,
+                       p.Stock_Minimo, p.Stock_Maximo, p.Precio_Compra
+                FROM productos p
+                LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto
+                LEFT JOIN marcas m ON m.Id_Marca = p.Id_Marca
+                WHERE p.Id_Proveedor = ? AND p.Estado = 1
+                ORDER BY p.Nombre";
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute([$idProveedor]);
+
+        return $consulta->fetchAll();
+    }
+
+    /**
+     * Devuelve el proveedor activo solo si está habilitado para nuevos pedidos.
+     */
+    public function obtenerProveedorActivo($idProveedor) {
+        $sql = "SELECT Id_Proveedor, Nombre, Correo
+                FROM proveedor
+                WHERE Id_Proveedor = ? AND Estado = 1";
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute([$idProveedor]);
+
+        return $consulta->fetch();
+    }
 }
