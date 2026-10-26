@@ -7,13 +7,13 @@
         <input type="hidden" name="a" value="index">
         <div class="row g-2">
             <div class="col-12 col-md-6">
-                <label for="busquedaPedidoEntrada" class="visually-hidden">Buscar pedido por número o proveedor</label>
+                <label for="busquedaPedidoEntrada" class="visually-hidden">Buscar por número, proveedor o producto</label>
                 <input
                     type="search"
                     id="busquedaPedidoEntrada"
                     name="busqueda"
                     class="form-control"
-                    placeholder="Buscar pedido por número o proveedor"
+                    placeholder="Buscar por número, proveedor o producto"
                     value="<?php echo htmlspecialchars($busqueda, ENT_QUOTES, 'UTF-8'); ?>"
                 >
             </div>
@@ -57,6 +57,12 @@
             </div>
             <span class="badge badge-amarillo">Por recibir</span>
         </section>
+
+        <div class="mb-3">
+            <a href="/ProyectoFerredog/public/index.php?c=entrada&amp;a=index" class="btn btn-outline-secondary">
+                ← Volver a la lista
+            </a>
+        </div>
 
         <form id="formularioEntradaPedido" method="POST" action="/ProyectoFerredog/public/index.php?c=entrada&amp;a=registrar">
             <input type="hidden" name="id_compra" value="<?php echo (int) $pedido['Id_Compras']; ?>">
@@ -177,44 +183,93 @@
                 </div>
             </div>
         </div>
-    <?php elseif (count($pedidos) > 1): ?>
-        <section class="seccion-card">
-            <h2 class="seccion-titulo">Pedidos Por recibir encontrados</h2>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
+    <?php endif; ?>
+
+    <section class="seccion-card">
+        <h2 class="seccion-titulo">
+            <?php echo $mostrarResultadosBusqueda ? 'Pedidos encontrados' : 'Pedidos por recibir'; ?>
+        </h2>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">N.º</th>
+                        <th scope="col">Proveedor</th>
+                        <th scope="col">Fecha del pedido</th>
+                        <th scope="col">Productos</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($pedidos)): ?>
                         <tr>
-                            <th scope="col">N.º</th>
-                            <th scope="col">Fecha</th>
-                            <th scope="col">Total</th>
-                            <th scope="col">Acciones</th>
+                            <td colspan="6" class="text-center">No hay pedidos por recibir</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($pedidos as $pedidoEncontrado): ?>
+                    <?php else: ?>
+                        <?php foreach ($pedidos as $pedidoListado): ?>
+                            <?php $fechaListado = new DateTime($pedidoListado['Fecha_Compra']); ?>
                             <tr>
-                                <td>#<?php echo (int) $pedidoEncontrado['Id_Compras']; ?></td>
+                                <td>#<?php echo (int) $pedidoListado['Id_Compras']; ?></td>
+                                <td><?php echo htmlspecialchars($pedidoListado['Proveedor'] ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo htmlspecialchars($fechaListado->format('d/m/Y'), ENT_QUOTES, 'UTF-8'); ?></td>
+                                <td><?php echo (int) $pedidoListado['Productos']; ?></td>
+                                <td>$<?php echo number_format((float) $pedidoListado['Total'], 2, '.', ','); ?></td>
                                 <td>
-                                    <?php
-                                    $fechaPedido = new DateTime($pedidoEncontrado['Fecha_Compra']);
-                                    echo htmlspecialchars($fechaPedido->format('d/m/Y'), ENT_QUOTES, 'UTF-8');
-                                    ?>
-                                </td>
-                                <td>$<?php echo number_format((float) $pedidoEncontrado['Total'], 2, '.', ','); ?></td>
-                                <td>
-                                    <form method="GET" action="/ProyectoFerredog/public/index.php">
-                                        <input type="hidden" name="c" value="entrada">
-                                        <input type="hidden" name="a" value="index">
-                                        <input type="hidden" name="busqueda" value="<?php echo htmlspecialchars($busqueda, ENT_QUOTES, 'UTF-8'); ?>">
-                                        <input type="hidden" name="id" value="<?php echo (int) $pedidoEncontrado['Id_Compras']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-primary">Elegir pedido</button>
-                                    </form>
+                                    <a
+                                        href="/ProyectoFerredog/public/index.php?c=entrada&amp;a=index&amp;id=<?php echo (int) $pedidoListado['Id_Compras']; ?>"
+                                        class="btn btn-sm btn-primary"
+                                    >Recibir</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    <?php endif; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tabla-pie d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <span>Mostrando <?php echo (int) $totalPedidos; ?> pedidos Por recibir</span>
+            <?php if ($totalPaginas > 1): ?>
+                <nav aria-label="Paginación de pedidos por recibir">
+                    <ul class="pagination mb-0">
+                        <li class="page-item <?php echo $pagina <= 1 ? 'disabled' : ''; ?>">
+                            <?php if ($pagina <= 1): ?>
+                                <span class="page-link" aria-hidden="true">&lsaquo;</span>
+                            <?php else: ?>
+                                <a
+                                    class="page-link"
+                                    href="<?php echo htmlspecialchars('/ProyectoFerredog/public/index.php?' . http_build_query(array_merge($parametrosPaginacion, ['pagina' => $pagina - 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                                    aria-label="Página anterior"
+                                >&lsaquo;</a>
+                            <?php endif; ?>
+                        </li>
+                        <?php for ($numeroPagina = 1; $numeroPagina <= $totalPaginas; $numeroPagina++): ?>
+                            <li class="page-item <?php echo $numeroPagina === $pagina ? 'active' : ''; ?>">
+                                <?php if ($numeroPagina === $pagina): ?>
+                                    <span class="page-link" aria-current="page"><?php echo $numeroPagina; ?></span>
+                                <?php else: ?>
+                                    <a
+                                        class="page-link"
+                                        href="<?php echo htmlspecialchars('/ProyectoFerredog/public/index.php?' . http_build_query(array_merge($parametrosPaginacion, ['pagina' => $numeroPagina])), ENT_QUOTES, 'UTF-8'); ?>"
+                                    ><?php echo $numeroPagina; ?></a>
+                                <?php endif; ?>
+                            </li>
+                        <?php endfor; ?>
+                        <li class="page-item <?php echo $pagina >= $totalPaginas ? 'disabled' : ''; ?>">
+                            <?php if ($pagina >= $totalPaginas): ?>
+                                <span class="page-link" aria-hidden="true">&rsaquo;</span>
+                            <?php else: ?>
+                                <a
+                                    class="page-link"
+                                    href="<?php echo htmlspecialchars('/ProyectoFerredog/public/index.php?' . http_build_query(array_merge($parametrosPaginacion, ['pagina' => $pagina + 1])), ENT_QUOTES, 'UTF-8'); ?>"
+                                    aria-label="Página siguiente"
+                                >&rsaquo;</a>
+                            <?php endif; ?>
+                        </li>
+                    </ul>
+                </nav>
+            <?php endif; ?>
+        </div>
+    </section>
 </main>

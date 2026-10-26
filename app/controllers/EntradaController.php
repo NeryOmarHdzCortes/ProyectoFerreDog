@@ -22,7 +22,7 @@ class EntradaController {
     }
 
     /**
-     * Busca pedidos pendientes por número o proveedor (W-13 y W-14).
+     * Busca pedidos pendientes por número, proveedor o producto (W-13 y W-14).
      */
     public function index() {
         $mensajeError = $_SESSION['mensaje_error'] ?? null;
@@ -30,40 +30,74 @@ class EntradaController {
         unset($_SESSION['mensaje_error'], $_SESSION['mensaje_exito']);
 
         $busqueda = $this->obtenerTexto($_GET['busqueda'] ?? '');
-        $idSeleccionado = $this->obtenerEntero($_GET['id'] ?? null);
         $busquedaRealizada = $busqueda !== '';
+        $idSeleccionado = $this->obtenerEntero($_GET['id'] ?? null);
+        $paginaSolicitada = $this->obtenerEntero($_GET['pagina'] ?? null);
+        $pagina = $paginaSolicitada !== null && $paginaSolicitada > 0 ? $paginaSolicitada : 1;
+        $limite = 10;
         $pedidoNoEncontrado = false;
-        $pedidos = [];
         $pedido = null;
         $detalles = [];
+        $mostrarResultadosBusqueda = false;
 
-        if ($busquedaRealizada) {
-            if (preg_match('/^#?([0-9]+)$/', $busqueda, $coincidencias) === 1) {
-                $resultado = $this->modeloPedido->buscarPorNumero((int) $coincidencias[1]);
-                $pedidos = $resultado ? [$resultado] : [];
+        if ($idSeleccionado !== null && $idSeleccionado > 0) {
+            $pedido = $this->modeloPedido->buscarPorNumero($idSeleccionado);
+            if ($pedido) {
+                $detalles = $this->modeloPedido->listarDetallesPedido($idSeleccionado);
             } else {
-                $pedidos = $this->modeloPedido->buscarPorProveedor($busqueda);
+                $pedidoNoEncontrado = true;
             }
-
-            if ($idSeleccionado !== null && $idSeleccionado > 0) {
-                foreach ($pedidos as $pedidoEncontrado) {
-                    if ((int) $pedidoEncontrado['Id_Compras'] === $idSeleccionado) {
-                        $pedido = $pedidoEncontrado;
-                        break;
-                    }
-                }
-
+        } elseif ($busquedaRealizada) {
+            if (preg_match('/^#?([0-9]+)$/', $busqueda, $coincidencias) === 1) {
+                $pedido = $this->modeloPedido->buscarPorNumero((int) $coincidencias[1]);
                 if ($pedido) {
-                    $detalles = $this->modeloPedido->listarDetallesPedido($idSeleccionado);
+                    $detalles = $this->modeloPedido->listarDetallesPedido((int) $pedido['Id_Compras']);
                 } else {
                     $pedidoNoEncontrado = true;
                 }
-            } elseif (count($pedidos) === 1) {
-                $pedido = $pedidos[0];
-                $detalles = $this->modeloPedido->listarDetallesPedido((int) $pedido['Id_Compras']);
-            } elseif (count($pedidos) === 0) {
-                $pedidoNoEncontrado = true;
+            } else {
+                $totalCoincidencias = $this->modeloPedido->contarPendientesPorTexto($busqueda);
+                if ($totalCoincidencias === 1) {
+                    $coincidencias = $this->modeloPedido->buscarPendientesPorTexto($busqueda, 1, 0);
+                    $pedido = $coincidencias[0];
+                    $detalles = $this->modeloPedido->listarDetallesPedido((int) $pedido['Id_Compras']);
+                } elseif ($totalCoincidencias > 1) {
+                    $mostrarResultadosBusqueda = true;
+                } else {
+                    $pedidoNoEncontrado = true;
+                }
             }
+        }
+
+        $desplazamiento = ($pagina - 1) * $limite;
+        if ($mostrarResultadosBusqueda) {
+            $totalPedidos = $this->modeloPedido->contarPendientesPorTexto($busqueda);
+            $pedidos = $this->modeloPedido->buscarPendientesPorTexto(
+                $busqueda,
+                $limite,
+                $desplazamiento
+            );
+        } else {
+            $totalPedidos = $this->modeloPedido->contarPorRecibir();
+            $pedidos = $this->modeloPedido->listarPorRecibirPaginados(
+                $limite,
+                $desplazamiento
+            );
+        }
+        $totalPaginas = (int) ceil($totalPedidos / $limite);
+        if ($totalPaginas > 0 && $pagina > $totalPaginas) {
+            $pagina = $totalPaginas;
+            $desplazamiento = ($pagina - 1) * $limite;
+            $pedidos = $mostrarResultadosBusqueda
+                ? $this->modeloPedido->buscarPendientesPorTexto($busqueda, $limite, $desplazamiento)
+                : $this->modeloPedido->listarPorRecibirPaginados($limite, $desplazamiento);
+        }
+        $parametrosPaginacion = [
+            'c' => 'entrada',
+            'a' => 'index'
+        ];
+        if ($mostrarResultadosBusqueda) {
+            $parametrosPaginacion['busqueda'] = $busqueda;
         }
 
         $titulo = 'Registrar entrada de mercancía - Ferredog';
@@ -263,7 +297,7 @@ class EntradaController {
     }
 
     private function crearUrlPedido($idPedido) {
-        return self::URL_BUSCADOR . '&busqueda=%23' . (int) $idPedido . '&id=' . (int) $idPedido;
+        return self::URL_BUSCADOR . '&id=' . (int) $idPedido;
     }
 
     private function redirigir($url) {

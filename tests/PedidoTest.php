@@ -302,6 +302,70 @@ class PedidoTest extends TestCase
                 $this->assertEquals(24.00, (float) $detalles[0]['Subtotal']);
             });
         });
+
+        $this->probar('TEC-PED-14', 'Técnico', 'Buscar entradas por número, proveedor y producto', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $producto = $this->crearProducto($proveedor['id']);
+                $idPendiente = $this->crearPedido($proveedor['id'], 'Pendiente', 18.00);
+                $idRecibido = $this->crearPedido($proveedor['id'], 'Recibida', 18.00);
+                $this->agregarDetalle($idPendiente, $producto['id'], 1, 18.00);
+                $this->agregarDetalle($idRecibido, $producto['id'], 1, 18.00);
+
+                $coincidenciasProveedor = $this->modelo->buscarPendientesPorTexto(
+                    $proveedor['nombre'],
+                    10,
+                    0
+                );
+                $coincidenciasProducto = $this->modelo->buscarPendientesPorTexto(
+                    $producto['nombre'],
+                    10,
+                    0
+                );
+
+                $this->assertEquals($idPendiente, (int) $this->modelo->buscarPorNumero($idPendiente)['Id_Compras']);
+                $this->assertFalse($this->modelo->buscarPorNumero($idRecibido));
+                $this->assertEquals(1, $this->modelo->contarPendientesPorTexto($proveedor['nombre']));
+                $this->assertEquals($idPendiente, (int) $coincidenciasProveedor[0]['Id_Compras']);
+                $this->assertEquals(1, $this->modelo->contarPendientesPorTexto($producto['nombre']));
+                $this->assertEquals($idPendiente, (int) $coincidenciasProducto[0]['Id_Compras']);
+            });
+        });
+
+        $this->probar('TEC-PED-15', 'Técnico', 'Listar y paginar únicamente pedidos pendientes de Entradas', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $idsPendientes = [];
+                for ($indice = 0; $indice < 11; $indice++) {
+                    $idsPendientes[] = $this->crearPedido($proveedor['id'], 'Pendiente');
+                }
+                $idRecibido = $this->crearPedido($proveedor['id'], 'Recibida');
+
+                $primeraPagina = $this->modelo->buscarPendientesPorTexto(
+                    $proveedor['nombre'],
+                    10,
+                    0
+                );
+                $segundaPagina = $this->modelo->buscarPendientesPorTexto(
+                    $proveedor['nombre'],
+                    10,
+                    10
+                );
+                $idsListaPendientes = array_map(
+                    'intval',
+                    array_column($this->modelo->listarPorRecibirPaginados(100, 0), 'Id_Compras')
+                );
+
+                $this->assertEquals(11, $this->modelo->contarPendientesPorTexto($proveedor['nombre']));
+                $this->assertEquals(10, count($primeraPagina));
+                $this->assertEquals(1, count($segundaPagina));
+                $this->assertEquals($idsPendientes[0], (int) $primeraPagina[0]['Id_Compras']);
+                $this->assertEquals($idsPendientes[10], (int) $segundaPagina[0]['Id_Compras']);
+                $this->assertTrue(in_array($idsPendientes[0], $idsListaPendientes, true));
+                $this->assertFalse(in_array($idRecibido, $idsListaPendientes, true));
+                $this->assertTrue($this->modelo->contarPorRecibir() >= 11);
+            });
+        });
     }
 
     private function crearProveedor(): array

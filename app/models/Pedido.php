@@ -26,6 +26,97 @@ class Pedido {
     }
 
     /**
+     * Lista pedidos pendientes del más antiguo al más reciente.
+     */
+    public function listarPorRecibirPaginados($limite, $desplazamiento) {
+        $sql = "SELECT c.Id_Compras, c.Fecha_Compra, c.Total,
+                       COALESCE(pr.Nombre, c.Nombre_Proveedor) AS Proveedor,
+                       (SELECT COUNT(*) FROM detalle_compras d
+                        WHERE d.Id_Compras = c.Id_Compras) AS Productos
+                FROM compras c
+                LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor
+                WHERE c.Estado = 'Pendiente'
+                ORDER BY c.Fecha_Compra ASC, c.Id_Compras ASC
+                LIMIT ? OFFSET ?";
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->bindValue(1, (int) $limite, PDO::PARAM_INT);
+        $consulta->bindValue(2, (int) $desplazamiento, PDO::PARAM_INT);
+        $consulta->execute();
+
+        return $consulta->fetchAll();
+    }
+
+    /**
+     * Cuenta pedidos pendientes para la paginación de Entradas.
+     */
+    public function contarPorRecibir() {
+        $consulta = $this->pdo->query(
+            "SELECT COUNT(*) FROM compras WHERE Estado = 'Pendiente'"
+        );
+
+        return (int) $consulta->fetchColumn();
+    }
+
+    /**
+     * Busca pedidos pendientes por proveedor o por un producto de sus detalles.
+     */
+    public function buscarPendientesPorTexto($busqueda, $limite, $desplazamiento) {
+        $sql = "SELECT c.Id_Compras, c.Fecha_Compra, c.Total,
+                       COALESCE(pr.Nombre, c.Nombre_Proveedor) AS Proveedor,
+                       (SELECT COUNT(*) FROM detalle_compras dc
+                        WHERE dc.Id_Compras = c.Id_Compras) AS Productos
+                FROM compras c
+                LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor
+                WHERE c.Estado = 'Pendiente'
+                  AND (
+                      COALESCE(pr.Nombre, c.Nombre_Proveedor) LIKE ?
+                      OR EXISTS (
+                          SELECT 1
+                          FROM detalle_compras d
+                          LEFT JOIN productos p ON p.Id_Producto = d.Id_Producto
+                          WHERE d.Id_Compras = c.Id_Compras
+                            AND COALESCE(p.Nombre, d.Nombre_Producto) LIKE ?
+                      )
+                  )
+                ORDER BY c.Fecha_Compra ASC, c.Id_Compras ASC
+                LIMIT ? OFFSET ?";
+        $consulta = $this->pdo->prepare($sql);
+        $parametroBusqueda = '%' . $busqueda . '%';
+        $consulta->bindValue(1, $parametroBusqueda, PDO::PARAM_STR);
+        $consulta->bindValue(2, $parametroBusqueda, PDO::PARAM_STR);
+        $consulta->bindValue(3, (int) $limite, PDO::PARAM_INT);
+        $consulta->bindValue(4, (int) $desplazamiento, PDO::PARAM_INT);
+        $consulta->execute();
+
+        return $consulta->fetchAll();
+    }
+
+    /**
+     * Cuenta pedidos pendientes que coinciden con proveedor o producto.
+     */
+    public function contarPendientesPorTexto($busqueda) {
+        $sql = "SELECT COUNT(*)
+                FROM compras c
+                LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor
+                WHERE c.Estado = 'Pendiente'
+                  AND (
+                      COALESCE(pr.Nombre, c.Nombre_Proveedor) LIKE ?
+                      OR EXISTS (
+                          SELECT 1
+                          FROM detalle_compras d
+                          LEFT JOIN productos p ON p.Id_Producto = d.Id_Producto
+                          WHERE d.Id_Compras = c.Id_Compras
+                            AND COALESCE(p.Nombre, d.Nombre_Producto) LIKE ?
+                      )
+                  )";
+        $consulta = $this->pdo->prepare($sql);
+        $parametroBusqueda = '%' . $busqueda . '%';
+        $consulta->execute([$parametroBusqueda, $parametroBusqueda]);
+
+        return (int) $consulta->fetchColumn();
+    }
+
+    /**
      * Lista pedidos por texto y estado, con paginación de la vista administrativa.
      */
     public function listarPedidos($busqueda, $estado, $limite, $desplazamiento) {
