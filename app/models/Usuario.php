@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Modelo Usuario
  * Maneja las tablas usuario y empleados

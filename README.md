@@ -1,6 +1,6 @@
 # Ferredog
 
-Sistema web de control de inventario para una ferretería. Permite administrar usuarios por rol, el catálogo de productos con su stock y los proveedores que los surten. El acceso está protegido con inicio de sesión, bloqueo por intentos fallidos y recuperación de contraseña por correo.
+Sistema web de control de inventario para una ferretería. Permite administrar usuarios por rol, el catálogo de productos con su stock, proveedores, pedidos a proveedores y entradas de mercancía. El acceso está protegido con inicio de sesión, bloqueo por intentos fallidos y recuperación de contraseña por correo.
 
 Proyecto de la materia **Desarrollo e Implementación de Sistemas de Información** — Instituto Tecnológico del Valle de Oaxaca.
 
@@ -70,8 +70,8 @@ Proyecto de la materia **Desarrollo e Implementación de Sistemas de Informació
 
 | Rol | Puede hacer |
 |---|---|
-| Administrador | Todo: usuarios, productos, precios y proveedores |
-| Almacenista | Consultar productos y su stock |
+| Administrador | Usuarios, productos, precios, proveedores y pedidos a proveedores |
+| Almacenista | Consultar productos y stock; buscar pedidos por recibir y registrar entradas |
 | Vendedor | Solo consultar y buscar productos |
 
 ## Recuperación de contraseña
@@ -87,7 +87,7 @@ El código vence a los 10 minutos y solo se puede usar una vez.
 ## Estructura principal
 
 ```
-app/controllers/   Controladores (login, inicio, usuarios, productos, proveedores)
+app/controllers/   Controladores (login, inicio, usuarios, productos, proveedores, pedidos, entradas)
 app/models/        Acceso a datos con PDO y consultas preparadas
 app/views/         Vistas HTML/PHP
 app/libraries/     Envío de correo (PHPMailer, sin Composer)
@@ -108,7 +108,7 @@ No requieren Composer. Usan la base real dentro de transacciones que se deshacen
 C:\xampp\php\php.exe tests\run.php
 ```
 
-El resultado de la última ejecución está en `docs/sprint1/pruebas_unitarias.md`.
+El resultado de la última ejecución está en `docs/sprint2/pruebas_unitarias.md`.
 
 ## Verificación en la base de datos
 
@@ -141,7 +141,7 @@ El resultado de la última ejecución está en `docs/sprint1/pruebas_unitarias.m
 - [ ] Vendedor y Almacenista solo pueden consultar.
 
 ### HU-6 · Proveedores (Administrador)
-- [ ] Registrar y editar un proveedor; nombre o correo repetido muestra un mensaje.
+- [ ] Registrar y editar un proveedor; nombre o correo repetido muestra un mensaje y el correo es obligatorio.
 - [ ] Buscar proveedores.
 - [ ] Desactivar con confirmación; desaparece de la lista de activos y de los productos.
 - [ ] "Ver los N productos" muestra los productos que surte.
@@ -151,4 +151,44 @@ El resultado de la última ejecución está en `docs/sprint1/pruebas_unitarias.m
 
 ## Nota
 
-El Sprint 1 cubre el inicio de sesión, la gestión de usuarios, el catálogo de productos y los proveedores. Pedidos y entradas de mercancía (Sprint 2) y ventas y alertas (Sprint 3) aparecen en el menú como próximas funciones.
+El Sprint 1 cubre el inicio de sesión, la gestión de usuarios, el catálogo de productos y los proveedores. El Sprint 2 agrega los módulos de pedidos y entradas. Ventas y alertas de stock corresponden al Sprint 3.
+
+## Módulos del Sprint 2
+
+### Pedidos a proveedores (Administrador)
+
+- Desde **Pedidos**, revisa los pedidos Por recibir y usa **+ Nuevo pedido**.
+- Elige un proveedor activo, agrega cantidades y costos mayores a cero y guarda el pedido.
+- Verifica que el pedido aparezca en la lista y que, con `MAIL_MODO=prueba`, el correo se registre en `storage/logs/correos.log`.
+- Cancela un pedido de prueba y confirma que deje de aparecer en Por recibir.
+
+### Entradas de mercancía (Almacenista)
+
+- Desde **Entradas**, busca un pedido pendiente por número (con o sin `#`) o por proveedor.
+- Usa **Reportar** para registrar un faltante o daño de prueba y luego pulsa **Registrar entrada de mercancía**.
+- Confirma que el pedido pase a Recibido, desaparezca de la búsqueda y el inventario aumente únicamente por la cantidad recibida en buen estado.
+- Revisa en DBeaver el pedido, sus detalles, las existencias y los movimientos. Sustituye `123` por el número de pedido probado:
+
+```sql
+SELECT c.Id_Compras, c.Estado, d.Id_Detalle, d.Cantidad,
+       d.Cantidad_Recibida, d.Incidencia, d.Motivo_Incidencia
+FROM compras c
+INNER JOIN detalle_compras d ON d.Id_Compras = c.Id_Compras
+WHERE c.Id_Compras = 123;
+
+SELECT i.Id_Producto, p.Nombre, i.Existencias,
+       m.Tipo, m.Cantidad, m.Stock_Antes, m.Stock_Despues, m.Motivo
+FROM inventario i
+INNER JOIN productos p ON p.Id_Producto = i.Id_Producto
+LEFT JOIN movimiento_inventario m ON m.Id_Producto = i.Id_Producto
+WHERE m.Motivo LIKE '%Pedido #123%'
+ORDER BY m.Id_Movimiento DESC;
+```
+
+### Acceso por rol
+
+- **Administrador:** puede entrar a Pedidos; Entradas no aparece en su menú y su acceso directo debe denegarse.
+- **Almacenista:** puede entrar a Entradas; Pedidos no aparece en su menú y su acceso directo debe denegarse.
+- **Vendedor:** solo consulta productos; el acceso directo a Pedidos y Entradas debe denegarse.
+
+Los módulos de Sprint 2 no deben probarse usando pedidos reales de operación. Para validar inventario y movimientos, utiliza pedidos y productos preparados para la prueba.

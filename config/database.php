@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Configuración de la base de datos
  * Lee las variables del archivo .env y establece la conexión PDO

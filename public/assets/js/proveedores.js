@@ -78,7 +78,11 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         const mostrarErrorCorreo = function () {
-            const valido = correoValido(campoCorreo.value);
+            const correoVacio = campoCorreo.value.trim() === '';
+            const valido = !correoVacio && correoValido(campoCorreo.value);
+            errorCorreo.textContent = correoVacio
+                ? 'El correo es obligatorio'
+                : 'Escribe un correo válido, por ejemplo nombre@gmail.com.';
             errorCorreo.hidden = valido;
             errorCorreo.classList.toggle('d-block', !valido);
             campoCorreo.classList.toggle('is-invalid', !valido);
@@ -94,12 +98,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         campoCorreo.addEventListener('invalid', function (evento) {
-            if (!correoValido(campoCorreo.value)) {
+            if (campoCorreo.value.trim() === '' || !correoValido(campoCorreo.value)) {
                 evento.preventDefault();
-                errorCorreo.hidden = false;
-                errorCorreo.classList.add('d-block');
-                campoCorreo.classList.add('is-invalid');
-                campoCorreo.setAttribute('aria-invalid', 'true');
+                mostrarErrorCorreo();
             }
         });
         campoCorreo.addEventListener('input', mostrarErrorCorreo);

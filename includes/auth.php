@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Verificación de autenticación
  * - Verifica que exista sesión activa

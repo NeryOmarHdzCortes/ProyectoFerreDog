@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Controlador de autenticación
  * Maneja login, logout y recuperación de contraseña

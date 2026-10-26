@@ -1,4 +1,4 @@
-﻿        <!-- Menú lateral -->
+        <!-- Menú lateral -->
         <aside class="sidebar">
             <div class="sidebar-titulo">MENÚ · <?php echo strtoupper(htmlspecialchars($_SESSION['Rol'])); ?></div>
             
@@ -59,10 +59,11 @@
                         <span>Productos</span>
                     </a>
                     
-                    <div class="menu-item menu-item-deshabilitado">
+                    <a href="/ProyectoFerredog/public/index.php?c=entrada&a=index"
+                       class="menu-item <?php echo menuActivo('entrada', $paginaActual); ?>">
                         <span class="menu-icono">📥</span>
-                        <span>Entradas <small class="badge-sprint">Sprint 2</small></span>
-                    </div>
+                        <span>Entradas</span>
+                    </a>
                     
                     <div class="menu-item menu-item-deshabilitado">
                         <span class="menu-icono">⚠️</span>

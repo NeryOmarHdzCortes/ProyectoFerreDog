@@ -1,4 +1,4 @@
-﻿        <!-- Contenido principal -->
+        <!-- Contenido principal -->
         <main class="contenido-principal">
             <h1 class="titulo-pagina">Bienvenido(a), <?php echo htmlspecialchars($nombre); ?></h1>
             <p class="subtitulo-pagina">Pantalla de inicio · el menú lateral cambia según el rol</p>

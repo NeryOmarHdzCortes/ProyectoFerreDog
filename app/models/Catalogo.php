@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Modelo Catálogo
  * Maneja categoria, marcas y unidad_medida para los combos

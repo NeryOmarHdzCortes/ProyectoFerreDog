@@ -156,7 +156,11 @@ class ProveedorController {
             $errores[] = $mensajeTelefono;
             $erroresPorCampo['telefono'] = $mensajeTelefono;
         }
-        if (!Validador::correoValido($datosProveedor['correo'])) {
+        if ($datosProveedor['correo'] === '') {
+            $mensajeCorreo = 'El correo es obligatorio';
+            $errores[] = $mensajeCorreo;
+            $erroresPorCampo['correo'] = $mensajeCorreo;
+        } elseif (!Validador::correoValido($datosProveedor['correo'])) {
             $mensajeCorreo = 'Escribe un correo válido, por ejemplo nombre@gmail.com.';
             $errores[] = $mensajeCorreo;
             $erroresPorCampo['correo'] = $mensajeCorreo;

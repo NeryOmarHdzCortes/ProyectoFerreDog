@@ -168,31 +168,27 @@ class PedidoController {
             }
 
             $idProducto = $this->obtenerEntero($idProductoEnviado);
-            $cantidad = filter_var($cantidadTexto, FILTER_VALIDATE_INT);
             $costoTexto = $this->obtenerTexto($datosProducto['costo'] ?? '');
-            $costoValido = preg_match('/^[0-9]+(?:\\.[0-9]{1,2})?$/', $costoTexto) === 1;
-            $costoCentavos = $costoValido ? $this->convertirACentavos($costoTexto) : 0;
-
-            if ($cantidad === false || $cantidad <= 0) {
-                $errores[] = 'La cantidad debe ser mayor a 0';
-            }
-            if (!$costoValido || $costoCentavos <= 0) {
-                $errores[] = 'El costo debe ser mayor a 0';
-            }
+            $validacionDetalle = $this->modeloPedido->validarValoresDetalle(
+                $cantidadTexto,
+                $costoTexto
+            );
+            $errores = array_merge($errores, $validacionDetalle['errores']);
             if ($idProducto === null || $idProducto <= 0) {
                 $errores[] = 'El producto ya no pertenece a este proveedor o está inactivo.';
                 continue;
             }
 
             $productosValidos[$idProducto] = [
-                'cantidad' => $cantidad,
-                'costo_centavos' => $costoCentavos
+                'cantidad' => $validacionDetalle['cantidad'],
+                'costo_centavos' => $validacionDetalle['costo_centavos']
             ];
         }
 
-        if (empty($productosValidos)) {
-            $errores[] = 'Agrega al menos un producto';
-        }
+        $errores = array_merge(
+            $errores,
+            $this->modeloPedido->validarProductosPedido($productosValidos)
+        );
 
         if ($proveedor) {
             $productosDelProveedor = $this->modeloPedido->listarProductosActivosPorProveedor($idProveedor);
@@ -203,10 +199,6 @@ class PedidoController {
                     unset($productosValidos[$idProducto]);
                 }
             }
-        }
-
-        if (empty($productosValidos) && !in_array('Agrega al menos un producto', $errores, true)) {
-            $errores[] = 'Agrega al menos un producto';
         }
 
         if (!empty($errores)) {
@@ -324,13 +316,6 @@ class PedidoController {
 
         $entero = filter_var((string) $valor, FILTER_VALIDATE_INT);
         return $entero === false ? null : $entero;
-    }
-
-    private function convertirACentavos($valor) {
-        $partes = explode('.', $valor, 2);
-        $centavos = str_pad($partes[1] ?? '', 2, '0');
-
-        return ((int) $partes[0] * 100) + (int) $centavos;
     }
 
     private function obtenerDatosFormularioPedido($idProveedor, $productos) {

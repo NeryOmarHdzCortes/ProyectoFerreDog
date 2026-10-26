@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Punto de entrada y enrutador del sistema
  * Enrutamiento: ?c=controlador&a=accion
