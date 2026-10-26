@@ -26,7 +26,7 @@ class ProveedorTest extends TestCase
                 $this->assertTrue($this->modelo->existeNombre($primero['nombre'], $idSegundo));
                 $this->assertTrue($this->modelo->existeCorreo($primero['correo'], $idSegundo));
 
-                $nombreEditado = $primero['nombre'] . '_EDITADO';
+                $nombreEditado = $primero['nombre'] . 'EDITADO';
                 $this->modelo->editar(
                     $idPrimero,
                     $nombreEditado,
@@ -42,7 +42,7 @@ class ProveedorTest extends TestCase
             });
         });
 
-        $this->probar('HU6-02', 'HU-6', 'Desactivar proveedor pone Estado en cero', function () {
+        $this->probar('HU6-02', 'HU-6', 'Eliminar y restaurar proveedor', function () {
             $this->enTransaccion(function () {
                 $proveedor = $this->crearProveedor();
                 $idProveedor = $this->ultimoProveedor($proveedor['nombre']);
@@ -52,6 +52,22 @@ class ProveedorTest extends TestCase
                 $fila->execute(['id' => $idProveedor]);
                 $this->assertEquals(0, (int) $fila->fetchColumn());
                 $this->assertEquals('Inactivo', $this->modelo->obtenerPorId($idProveedor)['Estado']);
+                $this->assertEquals([], $this->modelo->obtenerTodos($proveedor['nombre']));
+                $this->assertFalse(in_array(
+                    $idProveedor,
+                    array_map('intval', array_column($this->modelo->obtenerActivos(), 'Id_Proveedor')),
+                    true
+                ));
+                $eliminados = $this->modelo->obtenerTodos($proveedor['nombre'], true);
+                $this->assertEquals($idProveedor, (int) $eliminados[0]['Id_Proveedor']);
+
+                $this->modelo->restaurar($idProveedor);
+                $this->assertEquals($idProveedor, (int) $this->modelo->obtenerTodos($proveedor['nombre'])[0]['Id_Proveedor']);
+                $this->assertTrue(in_array(
+                    $idProveedor,
+                    array_map('intval', array_column($this->modelo->obtenerActivos(), 'Id_Proveedor')),
+                    true
+                ));
             });
         });
 
@@ -92,10 +108,10 @@ class ProveedorTest extends TestCase
 
     private function crearProveedor(): array
     {
-        $sufijo = $this->sufijoUnico();
+        $sufijo = $this->sufijoLetrasAleatorias();
         $proveedor = [
-            'nombre' => 'TEST_Proveedor_' . $sufijo,
-            'correo' => 'test_' . $sufijo . '@gmail.com'
+            'nombre' => 'PruebaProveedor' . $sufijo,
+            'correo' => 'proveedor' . strtolower($sufijo) . '@gmail.com'
         ];
         $this->assertTrue(Validador::correoValido($proveedor['correo']));
 
