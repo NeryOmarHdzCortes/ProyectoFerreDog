@@ -46,99 +46,15 @@ class UsuarioGestionTest extends TestCase
             });
         });
 
-        $this->probar('HU4-03', 'HU-4', 'Eliminar usuario sin enlaces borra sus datos', function () {
+        $this->probar('HU4-03', 'HU-4', 'Activar/desactivar y traducir estado', function () {
             $this->enTransaccion(function () {
                 $usuario = $this->crearUsuario();
-                $idEmpleado = $this->modelo->obtenerIdEmpleado($usuario['id']);
 
-                $resultado = $this->modelo->eliminar($usuario['id']);
-
-                $this->assertEquals('borrado', $resultado['accion']);
-                $consultaUsuario = $this->pdo->prepare('SELECT COUNT(*) FROM usuario WHERE Id_Usuario = :id');
-                $consultaUsuario->execute(['id' => $usuario['id']]);
-                $this->assertEquals(0, (int) $consultaUsuario->fetchColumn());
-                $consultaEmpleado = $this->pdo->prepare('SELECT COUNT(*) FROM empleados WHERE Id_Empleado = :id');
-                $consultaEmpleado->execute(['id' => $idEmpleado]);
-                $this->assertEquals(0, (int) $consultaEmpleado->fetchColumn());
-            });
-        });
-
-        $this->probar('HU4-05', 'HU-4', 'Empleado con venta se anonimiza y conserva historial', function () {
-            $this->enTransaccion(function () {
-                $usuario = $this->crearUsuario();
-                $idEmpleado = $this->modelo->obtenerIdEmpleado($usuario['id']);
-                $idMetodoPago = (int) $this->pdo
-                    ->query('SELECT Id_Metodo_Pago FROM metodo_pago ORDER BY Id_Metodo_Pago LIMIT 1')
-                    ->fetchColumn();
-                $this->assertTrue($idMetodoPago > 0, 'Se requiere al menos un método de pago.');
-
-                $venta = $this->pdo->prepare(
-                    'INSERT INTO ventas (Total, Id_Metodo_Pago, Id_Empleado)
-                     VALUES (:total, :metodo_pago, :empleado)'
-                );
-                $venta->execute([
-                    'total' => 1.00,
-                    'metodo_pago' => $idMetodoPago,
-                    'empleado' => $idEmpleado
-                ]);
-
-                $resultado = $this->modelo->eliminar($usuario['id']);
-
-                $this->assertEquals('anonimizado', $resultado['accion']);
-                $consultaUsuario = $this->pdo->prepare('SELECT COUNT(*) FROM usuario WHERE Id_Usuario = :id');
-                $consultaUsuario->execute(['id' => $usuario['id']]);
-                $this->assertEquals(0, (int) $consultaUsuario->fetchColumn());
-                $consultaEmpleado = $this->pdo->prepare(
-                    'SELECT Nombre, Apellidos, Correo, Telefono, Puesto, Estado
-                     FROM empleados WHERE Id_Empleado = :id'
-                );
-                $consultaEmpleado->execute(['id' => $idEmpleado]);
-                $empleado = $consultaEmpleado->fetch(PDO::FETCH_ASSOC);
-                $this->assertEquals('Empleado', $empleado['Nombre']);
-                $this->assertEquals('Eliminado', $empleado['Apellidos']);
-                $this->assertNull($empleado['Correo']);
-                $this->assertNull($empleado['Telefono']);
-                $this->assertNull($empleado['Puesto']);
-                $this->assertEquals(0, (int) $empleado['Estado']);
-            });
-        });
-
-        $this->probar('HU4-06', 'HU-4', 'No se puede eliminar al usuario en sesión', function () {
-            $this->enTransaccion(function () {
-                $usuario = $this->crearUsuario();
-                $idSesionPrueba = bin2hex(random_bytes(16));
-                $comando = [
-                    PHP_BINARY,
-                    __DIR__ . DIRECTORY_SEPARATOR . 'controller_validation_worker.php',
-                    'usuario-eliminar',
-                    $idSesionPrueba,
-                    (string) $usuario['id']
-                ];
-                $descriptores = [
-                    0 => ['pipe', 'r'],
-                    1 => ['pipe', 'w'],
-                    2 => ['pipe', 'w']
-                ];
-                $proceso = proc_open($comando, $descriptores, $tuberias);
-                $this->assertTrue(is_resource($proceso), 'Debe iniciarse el proceso para probar la protección de sesión.');
-
-                fwrite($tuberias[0], json_encode(['id_usuario' => $usuario['id']]));
-                fclose($tuberias[0]);
-                $salida = stream_get_contents($tuberias[1]);
-                $error = stream_get_contents($tuberias[2]);
-                fclose($tuberias[1]);
-                fclose($tuberias[2]);
-                $codigoSalida = proc_close($proceso);
-
-                $marcador = strrpos($salida, 'SESSION_STATE:');
-                $this->assertTrue($codigoSalida === 0, 'El worker debe finalizar correctamente: ' . $error);
-                $this->assertTrue($marcador !== false, 'El worker debe devolver el estado de sesión.');
-                $estadoSesion = json_decode(
-                    base64_decode(substr($salida, $marcador + strlen('SESSION_STATE:'))),
-                    true
-                );
-                $this->assertEquals('No puedes eliminar tu propia cuenta', $estadoSesion['mensaje_error']);
-                $this->assertTrue($this->modelo->obtenerPorId($usuario['id']) !== false);
+                $this->assertEquals('Activo', $this->modelo->obtenerPorId($usuario['id'])['Estado']);
+                $this->modelo->cambiarEstado($usuario['id'], 'Inactivo');
+                $this->assertEquals('Inactivo', $this->modelo->obtenerPorId($usuario['id'])['Estado']);
+                $this->modelo->cambiarEstado($usuario['id'], 'Activo');
+                $this->assertEquals('Activo', $this->modelo->obtenerPorId($usuario['id'])['Estado']);
             });
         });
 

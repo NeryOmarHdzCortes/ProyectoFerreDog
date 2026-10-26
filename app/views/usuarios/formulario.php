@@ -14,13 +14,15 @@
                 'apellidos' => $usuario['Apellidos'] ?? '',
                 'nombre_usuario' => $usuario['Usuario'] ?? '',
                 'correo' => $usuario['Correo'] ?? '',
-                'rol' => $usuario['Rol'] ?? ''
+                'rol' => $usuario['Rol'] ?? '',
+                'estado' => $usuario['Estado'] ?? 'Activo'
             ] : [
                 'nombre' => '',
                 'apellidos' => '',
                 'nombre_usuario' => '',
                 'correo' => '',
-                'rol' => ''
+                'rol' => '',
+                'estado' => ''
             ];
             $datos = array_merge($datosBase, $datos ?? [], $_SESSION['old'] ?? []);
             $error = $_SESSION['error'] ?? $_SESSION['mensaje_error'] ?? '';
@@ -190,6 +192,27 @@
                         </div>
                     </div>
                 <?php endif; ?>
+                
+                <div class="seccion-card mt-4">
+                    <div class="form-group">
+                        <label class="switch-label">
+                            <span class="form-label">Estado</span>
+                            <label class="switch">
+                                <input 
+                                    type="checkbox" 
+                                    name="estado" 
+                                    value="Activo"
+                                    <?php echo ($datos['estado'] ?? '') === 'Activo' ? 'checked' : ''; ?>
+                                >
+                                <span class="slider"></span>
+                            </label>
+                            <span class="switch-texto">Activo</span>
+                        </label>
+                        <?php if (isset($erroresCampo['estado'])): ?>
+                            <div class="invalid-feedback d-block"><?php echo htmlspecialchars($erroresCampo['estado'], ENT_QUOTES, 'UTF-8'); ?></div>
+                        <?php endif; ?>
+                    </div>
+                </div>
                 
                 <div class="acciones-form">
                     <a href="/ProyectoFerredog/public/index.php?c=usuario&a=lista" class="btn btn-secondary">Cancelar</a>

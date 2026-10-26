@@ -15,6 +15,7 @@ class UsuarioController {
 
     private const URL_LISTA = '/ProyectoFerredog/public/index.php?c=usuario&a=lista';
     private const ROLES_VALIDOS = ['Administrador', 'Almacenista', 'Vendedor'];
+    private const ESTADOS_VALIDOS = ['Activo', 'Inactivo'];
 
     public function __construct() {
         global $pdo;
@@ -31,8 +32,9 @@ class UsuarioController {
     public function lista() {
         $busqueda = trim($_GET['busqueda'] ?? '');
         $filtroRol = $_GET['rol'] ?? '';
+        $filtroEstado = $_GET['estado'] ?? '';
 
-        $usuarios = $this->modeloUsuario->obtenerTodos($busqueda, $filtroRol);
+        $usuarios = $this->modeloUsuario->obtenerTodos($busqueda, $filtroRol, $filtroEstado);
 
         $titulo = 'Usuarios - Ferredog';
         $scriptExtra = 'usuarios.js';
@@ -41,6 +43,34 @@ class UsuarioController {
         require_once BASE_PATH . '/app/views/layout/sidebar.php';
         require_once BASE_PATH . '/app/views/usuarios/lista.php';
         require_once BASE_PATH . '/app/views/layout/footer.php';
+    }
+
+    /**
+     * Activar o desactivar un usuario desde la lista
+     */
+    public function cambiarEstado() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $idUsuario = (int) ($_POST['id_usuario'] ?? 0);
+        $nuevoEstado = $_POST['nuevo_estado'] ?? '';
+
+        if ($idUsuario <= 0 || !in_array($nuevoEstado, self::ESTADOS_VALIDOS, true)) {
+            $_SESSION['mensaje_error'] = 'Solicitud no válida.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        // No permitir desactivarse a sí mismo
+        if ($idUsuario === (int) $_SESSION['Id_Usuario']) {
+            $_SESSION['mensaje_error'] = 'No puedes desactivar tu propia cuenta.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $this->modeloUsuario->cambiarEstado($idUsuario, $nuevoEstado);
+
+        $_SESSION['mensaje_exito'] = 'Estado del usuario actualizado correctamente.';
+        $this->redirigir(self::URL_LISTA);
     }
 
     /**
@@ -55,7 +85,8 @@ class UsuarioController {
             'apellidos' => '',
             'nombre_usuario' => '',
             'correo' => '',
-            'rol' => ''
+            'rol' => '',
+            'estado' => ''
         ];
         $datos = array_merge($datos, $_SESSION['old'] ?? []);
 
@@ -102,6 +133,7 @@ class UsuarioController {
         $nombreUsuario = trim($_POST['nombre_usuario'] ?? '');
         $correo = trim($_POST['correo'] ?? '');
         $rol = $_POST['rol'] ?? '';
+        $estado = $_POST['estado'] ?? 'Inactivo';
         $contrasena = $_POST['contrasena'] ?? '';
         $confirmarContrasena = $_POST['confirmar_contrasena'] ?? '';
 
@@ -126,6 +158,11 @@ class UsuarioController {
             $errores[] = 'El rol seleccionado no es válido.';
             $erroresPorCampo['rol'] = 'El rol seleccionado no es válido.';
         }
+        if (!in_array($estado, self::ESTADOS_VALIDOS, true)) {
+            $errores[] = 'El estado seleccionado no es válido.';
+            $erroresPorCampo['estado'] = 'El estado seleccionado no es válido.';
+        }
+
         try {
             if ($idUsuario === 0) {
                 // Crear: nombre de usuario y contraseña
@@ -166,11 +203,15 @@ class UsuarioController {
                     $erroresPorCampo['correo'] = 'Este correo electrónico ya está registrado.';
                 }
 
-                // El administrador no puede quitarse su propio rol.
+                // El administrador no puede quitarse su rol ni desactivarse a sí mismo
                 if ($idUsuario === (int) $_SESSION['Id_Usuario']) {
                     if ($rol !== 'Administrador') {
                         $errores[] = 'No puedes quitarte el rol de Administrador.';
                         $erroresPorCampo['rol'] = 'No puedes quitarte el rol de Administrador.';
+                    }
+                    if ($estado !== 'Activo') {
+                        $errores[] = 'No puedes desactivar tu propia cuenta.';
+                        $erroresPorCampo['estado'] = 'No puedes desactivar tu propia cuenta.';
                     }
                 }
             }
@@ -196,9 +237,9 @@ class UsuarioController {
             $this->pdo->beginTransaction();
 
             if ($idUsuario === 0) {
-                $this->modeloUsuario->crear($nombre, $apellidos, $correo, $nombreUsuario, $contrasena, $rol, 'Activo');
+                $this->modeloUsuario->crear($nombre, $apellidos, $correo, $nombreUsuario, $contrasena, $rol, $estado);
             } else {
-                $this->modeloUsuario->editar($idUsuario, $nombre, $apellidos, $correo, $rol);
+                $this->modeloUsuario->editar($idUsuario, $nombre, $apellidos, $correo, $rol, $estado);
             }
 
             $this->pdo->commit();
@@ -229,55 +270,18 @@ class UsuarioController {
         $this->redirigir(self::URL_LISTA);
     }
 
-    /**
-     * Eliminar el acceso y borrar o anonimizar los datos del empleado.
-     */
-    public function eliminar() {
-        requerirRol(['Administrador']);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirigir(self::URL_LISTA);
-        }
-
-        $idUsuario = (int) ($_POST['id_usuario'] ?? 0);
-        if ($idUsuario <= 0) {
-            $_SESSION['mensaje_error'] = 'No se pudo identificar al usuario que deseas eliminar.';
-            $this->redirigir(self::URL_LISTA);
-        }
-
-        if ($idUsuario === (int) ($_SESSION['Id_Usuario'] ?? 0)) {
-            $_SESSION['mensaje_error'] = 'No puedes eliminar tu propia cuenta';
-            $this->redirigir(self::URL_LISTA);
-        }
-
-        try {
-            $resultado = $this->modeloUsuario->eliminar($idUsuario);
-            if ($resultado['accion'] === 'borrado') {
-                $_SESSION['mensaje_exito'] = 'Usuario eliminado por completo.';
-            } elseif ($resultado['accion'] === 'anonimizado') {
-                $_SESSION['mensaje_exito'] = 'Usuario eliminado. Sus datos personales se borraron y su historial de ventas y compras se conservó.';
-            } else {
-                throw new RuntimeException('El resultado de eliminación no es válido.');
-            }
-        } catch (Throwable $error) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-            error_log('Error al eliminar usuario: ' . $error->getMessage());
-            $_SESSION['mensaje_error'] = 'No se pudo eliminar el usuario. Intenta de nuevo.';
-        }
-
-        $this->redirigir(self::URL_LISTA);
-    }
-
     private function obtenerDatosFormulario() {
-        $campos = ['nombre', 'apellidos', 'nombre_usuario', 'correo', 'rol'];
+        $campos = ['nombre', 'apellidos', 'nombre_usuario', 'correo', 'rol', 'estado'];
         $datos = [];
 
         foreach ($campos as $campo) {
             if (isset($_POST[$campo]) && is_scalar($_POST[$campo])) {
                 $datos[$campo] = (string) $_POST[$campo];
             }
+        }
+
+        if (!isset($datos['estado'])) {
+            $datos['estado'] = 'Inactivo';
         }
 
         return $datos;
