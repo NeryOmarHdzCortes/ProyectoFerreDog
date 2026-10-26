@@ -45,10 +45,8 @@ class Producto {
             $parametros['proveedor'] = $idProveedor;
         }
 
-        if ($estado === 'Activo' || $estado === 'Inactivo') {
-            $condiciones .= " AND p.Estado = :estado";
-            $parametros['estado'] = $this->estadoANumero($estado);
-        }
+        $condiciones .= " AND p.Estado = :estado";
+        $parametros['estado'] = $estado === 'Inactivo' ? 0 : 1;
 
         return [$condiciones, $parametros];
     }
@@ -248,6 +246,16 @@ class Producto {
      */
     public function desactivar($idProducto) {
         $sql = "UPDATE productos SET Estado = 0 WHERE Id_Producto = :id";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $idProducto]);
+    }
+
+    /**
+     * Restaurar un producto eliminado lógicamente.
+     */
+    public function restaurar($idProducto) {
+        $sql = "UPDATE productos SET Estado = 1 WHERE Id_Producto = :id";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $idProducto]);

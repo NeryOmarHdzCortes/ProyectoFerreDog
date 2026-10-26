@@ -69,7 +69,7 @@ class ProductoTest extends TestCase
             });
         });
 
-        $this->probar('HU5-04', 'HU-5', 'Producto inexistente, precio inválido y desactivación', function () {
+        $this->probar('HU5-04', 'HU-5', 'Producto inexistente, precio inválido, eliminación y restauración', function () {
             $this->enTransaccion(function () {
                 $this->assertFalse($this->modelo->obtenerPorId(-1));
                 $producto = $this->crearProducto();
@@ -85,6 +85,11 @@ class ProductoTest extends TestCase
                 $fila = $this->pdo->prepare('SELECT Estado FROM productos WHERE Id_Producto = :id');
                 $fila->execute(['id' => $producto['id']]);
                 $this->assertEquals(0, (int) $fila->fetchColumn());
+                $this->assertEquals([], $this->modelo->obtenerTodos($producto['nombre']));
+
+                $this->modelo->restaurar($producto['id']);
+                $restaurado = $this->modelo->obtenerTodos($producto['nombre']);
+                $this->assertEquals($producto['id'], (int) $restaurado[0]['Id_Producto']);
             });
         });
 

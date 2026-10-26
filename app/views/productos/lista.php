@@ -2,15 +2,29 @@
         <main class="contenido-principal">
             <div class="encabezado-pagina">
                 <div>
-                    <h1 class="titulo-pagina">Productos</h1>
-                    <p class="subtitulo-pagina">Catálogo de la ferretería · en rojo los que llegaron a su stock mínimo</p>
+                    <h1 class="titulo-pagina"><?php echo $verEliminados ? 'Productos eliminados' : 'Productos'; ?></h1>
+                    <p class="subtitulo-pagina"><?php echo $verEliminados ? 'Productos que puedes restaurar' : 'Catálogo de la ferretería · en rojo los que llegaron a su stock mínimo'; ?></p>
                 </div>
+
                 <?php if ($_SESSION['Rol'] !== 'Vendedor'): ?>
                     <a href="/ProyectoFerredog/public/index.php?c=producto&a=crear" class="btn btn-primary">
                         + Agregar producto
                     </a>
                 <?php endif; ?>
             </div>
+
+            <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
+                <nav class="mb-3" aria-label="Vistas de productos">
+                    <a href="/ProyectoFerredog/public/index.php?c=producto&a=lista"
+                       class="btn btn-sm <?php echo $verEliminados ? 'btn-outline-secondary' : 'btn-primary'; ?>">
+                        Productos
+                    </a>
+                    <a href="/ProyectoFerredog/public/index.php?c=producto&a=lista&eliminados=1"
+                       class="btn btn-sm <?php echo $verEliminados ? 'btn-primary' : 'btn-outline-secondary'; ?>">
+                        Eliminados
+                    </a>
+                </nav>
+            <?php endif; ?>
             
             <?php if (isset($_SESSION['mensaje_exito'])): ?>
                 <div class="alerta-exito">
@@ -29,6 +43,9 @@
                 <form method="GET" action="/ProyectoFerredog/public/index.php" class="filtros-form">
                     <input type="hidden" name="c" value="producto">
                     <input type="hidden" name="a" value="lista">
+                    <?php if ($verEliminados): ?>
+                        <input type="hidden" name="eliminados" value="1">
+                    <?php endif; ?>
                     
                     <div class="filtros-grid">
                         <div class="filtro-item">
@@ -62,14 +79,6 @@
                                         <?php echo htmlspecialchars($prov['Nombre']); ?>
                                     </option>
                                 <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="filtro-item">
-                            <select name="estado" class="form-control">
-                                <option value="">Estado: Todos</option>
-                                <option value="Activo" <?php echo $filtroEstado === 'Activo' ? 'selected' : ''; ?>>Activos</option>
-                                <option value="Inactivo" <?php echo $filtroEstado === 'Inactivo' ? 'selected' : ''; ?>>Inactivos</option>
                             </select>
                         </div>
                         
@@ -132,25 +141,42 @@
                                         <?php if ($_SESSION['Rol'] !== 'Vendedor'): ?>
                                             <td>
                                                 <div class="btn-group">
-                                                    <a href="/ProyectoFerredog/public/index.php?c=producto&a=editar&id=<?php echo $producto['Id_Producto']; ?>" 
-                                                       class="btn btn-sm btn-primary">
-                                                        Editar
-                                                    </a>
+                                                    <?php if (!$verEliminados): ?>
+                                                        <a href="/ProyectoFerredog/public/index.php?c=producto&a=editar&id=<?php echo $producto['Id_Producto']; ?>"
+                                                           class="btn btn-sm btn-primary">
+                                                            Editar
+                                                        </a>
                                                     
-                                                    <?php if (in_array($_SESSION['Rol'], ['Administrador', 'Almacenista'], true)): ?>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-success"
-                                                                onclick="abrirModalPrecio(<?php echo $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES); ?>', <?php echo $producto['Precio_Venta'] ?? 0; ?>)">
-                                                            Poner precio
-                                                        </button>
+                                                        <?php if (in_array($_SESSION['Rol'], ['Administrador', 'Almacenista'], true)): ?>
+                                                            <button type="button"
+                                                                    class="btn btn-sm btn-success"
+                                                                    onclick="abrirModalPrecio(<?php echo $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES); ?>', <?php echo $producto['Precio_Venta'] ?? 0; ?>)">
+                                                                Poner precio
+                                                            </button>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
 
                                                     <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-secondary"
-                                                                onclick="confirmarDesactivar(<?php echo $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES); ?>')">
-                                                            Desactivar
-                                                        </button>
+                                                        <?php if ($verEliminados): ?>
+                                                            <form method="POST"
+                                                                  action="/ProyectoFerredog/public/index.php?c=producto&a=restaurar"
+                                                                  class="d-inline">
+                                                                <input type="hidden" name="id_producto" value="<?php echo (int) $producto['Id_Producto']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-success">Restaurar</button>
+                                                            </form>
+                                                        <?php else: ?>
+                                                            <?php
+                                                            $confirmacionEliminar = "¿Eliminar '" . $producto['Nombre']
+                                                                . "'? Dejará de aparecer en el sistema. Podrás restaurarlo desde 'Eliminados'.";
+                                                            ?>
+                                                            <form method="POST"
+                                                                  action="/ProyectoFerredog/public/index.php?c=producto&a=desactivar"
+                                                                  class="form-eliminar-producto d-inline"
+                                                                  data-confirmacion="<?php echo htmlspecialchars($confirmacionEliminar, ENT_QUOTES, 'UTF-8'); ?>">
+                                                                <input type="hidden" name="id_producto" value="<?php echo (int) $producto['Id_Producto']; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                                            </form>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -165,8 +191,10 @@
                 <!-- Pie de tabla -->
                 <div class="tabla-pie d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <span>
-                        Mostrando <?php echo count($productos); ?> de <?php echo $totalProductos; ?> productos ·
-                        <?php echo $productosStockMinimo; ?> en stock mínimo
+                        Mostrando <?php echo count($productos); ?> de <?php echo $totalProductos; ?> productos
+                        <?php if (!$verEliminados): ?>
+                            · <?php echo $productosStockMinimo; ?> en stock mínimo
+                        <?php endif; ?>
                     </span>
                     <?php if ($totalPaginas > 1): ?>
                         <?php
@@ -244,24 +272,4 @@
             </div>
         </div>
         
-        <!-- Modal de confirmación para desactivar -->
-        <div id="modalDesactivar" class="modal" style="display: none;">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-titulo">¿Desactivar producto?</h3>
-                    </div>
-                    <div class="modal-body">
-                        <p id="modalDesactivarMensaje"></p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="cerrarModalDesactivar()">Cancelar</button>
-                        <form id="formDesactivar" method="POST" action="/ProyectoFerredog/public/index.php?c=producto&a=desactivar" style="display: inline;">
-                            <input type="hidden" name="id_producto" id="inputIdProducto">
-                            <button type="submit" class="btn btn-danger">Desactivar</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
         <?php endif; ?>

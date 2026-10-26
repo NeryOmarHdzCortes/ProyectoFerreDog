@@ -58,40 +58,22 @@ function guardarPrecio() {
     form.submit();
 }
 
-/**
- * Confirmar desactivación de producto (solo Administrador)
- */
-function confirmarDesactivar(idProducto, nombreProducto) {
-    idProductoActual = idProducto;
-
-    document.getElementById('modalDesactivarMensaje').textContent =
-        `¿Desactivar "${nombreProducto}"? Ya no aparecerá en la lista de productos activos.`;
-
-    document.getElementById('inputIdProducto').value = idProducto;
-    document.getElementById('modalDesactivar').style.display = 'flex';
-}
-
-/**
- * Cerrar modal de desactivar
- */
-function cerrarModalDesactivar() {
-    document.getElementById('modalDesactivar').style.display = 'none';
-    idProductoActual = 0;
-}
-
 // Cerrar modales al hacer clic fuera de ellos
 window.onclick = function (event) {
     const modalPrecio = document.getElementById('modalPrecio');
-    const modalDesactivar = document.getElementById('modalDesactivar');
 
     if (event.target === modalPrecio) {
         cerrarModalPrecio();
     }
-
-    if (event.target === modalDesactivar) {
-        cerrarModalDesactivar();
-    }
 };
+
+document.querySelectorAll('.form-eliminar-producto').forEach((formulario) => {
+    formulario.addEventListener('submit', (event) => {
+        if (!window.confirm(formulario.dataset.confirmacion)) {
+            event.preventDefault();
+        }
+    });
+});
 
 const formularioProducto = document.querySelector('.formulario-producto');
 const campoStockMinimo = document.getElementById('stock_minimo');
