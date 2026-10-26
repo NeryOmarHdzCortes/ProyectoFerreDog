@@ -211,6 +211,97 @@ class PedidoTest extends TestCase
                 }
             });
         });
+
+        $this->probar('TEC-PED-09', 'Técnico', 'Buscar pedidos por número con y sin prefijo #', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $idPendiente = $this->crearPedido($proveedor['id'], 'Pendiente');
+                $this->crearPedido($proveedor['id'], 'Recibida');
+
+                $conPrefijo = $this->modelo->listarPedidos('#' . $idPendiente, 'Todos', 10, 0);
+                $sinPrefijo = $this->modelo->listarPedidos((string) $idPendiente, 'Todos', 10, 0);
+
+                $this->assertEquals(1, count($conPrefijo));
+                $this->assertEquals($idPendiente, (int) $conPrefijo[0]['Id_Compras']);
+                $this->assertEquals($idPendiente, (int) $sinPrefijo[0]['Id_Compras']);
+            });
+        });
+
+        $this->probar('TEC-PED-10', 'Técnico', 'Buscar pedidos por nombre de proveedor', function () {
+            $this->enTransaccion(function () {
+                $proveedorCoincidente = $this->crearProveedor();
+                $proveedorDiferente = $this->crearProveedor();
+                $idCoincidente = $this->crearPedido($proveedorCoincidente['id'], 'Pendiente');
+                $this->crearPedido($proveedorDiferente['id'], 'Pendiente');
+
+                $pedidos = $this->modelo->listarPedidos(
+                    substr($proveedorCoincidente['nombre'], -12),
+                    'Pendiente',
+                    10,
+                    0
+                );
+
+                $this->assertEquals(1, count($pedidos));
+                $this->assertEquals($idCoincidente, (int) $pedidos[0]['Id_Compras']);
+                $this->assertEquals($proveedorCoincidente['nombre'], $pedidos[0]['Proveedor']);
+            });
+        });
+
+        $this->probar('TEC-PED-11', 'Técnico', 'Filtrar pedidos por estado y consultar todos los estados', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $idPendiente = $this->crearPedido($proveedor['id'], 'Pendiente');
+                $idRecibido = $this->crearPedido($proveedor['id'], 'Recibida');
+                $idCancelado = $this->crearPedido($proveedor['id'], 'Cancelada');
+
+                $pendientes = $this->modelo->listarPedidos('', 'Pendiente', 10, 0);
+                $recibidos = $this->modelo->listarPedidos('', 'Recibida', 10, 0);
+                $cancelados = $this->modelo->listarPedidos('', 'Cancelada', 10, 0);
+                $todos = $this->modelo->listarPedidos('', 'Todos', 10, 0);
+
+                $this->assertTrue(in_array($idPendiente, array_map('intval', array_column($pendientes, 'Id_Compras')), true));
+                $this->assertTrue(in_array($idRecibido, array_map('intval', array_column($recibidos, 'Id_Compras')), true));
+                $this->assertTrue(in_array($idCancelado, array_map('intval', array_column($cancelados, 'Id_Compras')), true));
+                $this->assertEquals(3, $this->modelo->contarPedidos($proveedor['nombre'], 'Todos'));
+                $this->assertEquals(1, $this->modelo->contarPedidos($proveedor['nombre'], 'Pendiente'));
+            });
+        });
+
+        $this->probar('TEC-PED-12', 'Técnico', 'Paginar la lista de pedidos en grupos de diez', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                for ($indice = 0; $indice < 11; $indice++) {
+                    $this->crearPedido($proveedor['id'], 'Pendiente');
+                }
+
+                $busqueda = substr($proveedor['nombre'], -12);
+                $primeraPagina = $this->modelo->listarPedidos($busqueda, 'Pendiente', 10, 0);
+                $segundaPagina = $this->modelo->listarPedidos($busqueda, 'Pendiente', 10, 10);
+
+                $this->assertEquals(11, $this->modelo->contarPedidos($busqueda, 'Pendiente'));
+                $this->assertEquals(10, count($primeraPagina));
+                $this->assertEquals(1, count($segundaPagina));
+            });
+        });
+
+        $this->probar('TEC-PED-13', 'Técnico', 'Consultar el encabezado y renglones históricos del pedido', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $producto = $this->crearProducto($proveedor['id']);
+                $idPedido = $this->crearPedido($proveedor['id'], 'Pendiente', 24.00);
+                $this->agregarDetalle($idPedido, $producto['id'], 2, 12.00);
+
+                $encabezado = $this->modelo->obtenerDetallePedido($idPedido);
+                $detalles = $this->modelo->listarDetallesHistorialPedido($idPedido);
+
+                $this->assertEquals($proveedor['nombre'], $encabezado['Proveedor']);
+                $this->assertNotNull($encabezado['EmpleadoRegistro']);
+                $this->assertEquals(1, count($detalles));
+                $this->assertEquals($producto['nombre'], $detalles[0]['Producto']);
+                $this->assertEquals(12.00, (float) $detalles[0]['Precio_Unitario']);
+                $this->assertEquals(24.00, (float) $detalles[0]['Subtotal']);
+            });
+        });
     }
 
     private function crearProveedor(): array

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Estilos del sistema Ferredog
  * Colores y fuentes según wireframes
  */
@@ -945,6 +945,17 @@ input:disabled+.slider {
 
 .btn-cancelar-pedido:hover {
     background-color: var(--rojo-claro);
+}
+
+.btn.btn-sm.btn-cancelar-pedido {
+    background-color: #ffffff;
+    border: 1px solid #dc2626;
+    color: #dc2626;
+}
+
+.btn.btn-sm.btn-cancelar-pedido:hover {
+    background-color: var(--rojo-claro);
+    color: #dc2626;
 }
 
 /* === FORMULARIOS === */

@@ -14,6 +14,7 @@ class PedidoController {
 
     private const URL_LISTA = '/ProyectoFerredog/public/index.php?c=pedido&a=lista';
     private const URL_NUEVO = '/ProyectoFerredog/public/index.php?c=pedido&a=nuevo';
+    private const PEDIDOS_POR_PAGINA = 10;
 
     public function __construct() {
         global $pdo;
@@ -24,16 +25,69 @@ class PedidoController {
     }
 
     /**
-     * Muestra los pedidos pendientes ordenados del más reciente al más antiguo.
+     * Muestra pedidos filtrados por número/proveedor y estado.
      */
     public function lista() {
-        $pedidos = $this->modeloPedido->listarPorRecibir();
+        $busqueda = $this->obtenerTexto($_GET['busqueda'] ?? '');
+        $filtroEstado = $this->obtenerTexto($_GET['estado'] ?? 'Pendiente');
+        if (!in_array($filtroEstado, ['Pendiente', 'Recibida', 'Cancelada', 'Todos'], true)) {
+            $filtroEstado = 'Pendiente';
+        }
+
+        $totalPedidos = $this->modeloPedido->contarPedidos($busqueda, $filtroEstado);
+        $totalPaginas = max(1, (int) ceil($totalPedidos / self::PEDIDOS_POR_PAGINA));
+        $pagina = max(1, $this->obtenerEntero($_GET['pagina'] ?? 1) ?? 1);
+        $pagina = min($pagina, $totalPaginas);
+        $pedidos = $this->modeloPedido->listarPedidos(
+            $busqueda,
+            $filtroEstado,
+            self::PEDIDOS_POR_PAGINA,
+            ($pagina - 1) * self::PEDIDOS_POR_PAGINA
+        );
+        $estadoTexto = [
+            'Pendiente' => 'Por recibir',
+            'Recibida' => 'Recibido',
+            'Cancelada' => 'Cancelado',
+            'Todos' => 'Todos'
+        ][$filtroEstado];
+        $parametrosPaginacion = [
+            'c' => 'pedido',
+            'a' => 'lista',
+            'busqueda' => $busqueda,
+            'estado' => $filtroEstado
+        ];
         $titulo = 'Pedidos a proveedores - Ferredog';
         $scriptExtra = 'pedidos.js';
 
         require_once BASE_PATH . '/app/views/layout/header.php';
         require_once BASE_PATH . '/app/views/layout/sidebar.php';
         require_once BASE_PATH . '/app/views/pedidos/lista.php';
+        require_once BASE_PATH . '/app/views/layout/footer.php';
+    }
+
+    /**
+     * Muestra el encabezado y renglones históricos de un pedido.
+     */
+    public function ver() {
+        $idPedido = $this->obtenerEntero($_GET['id'] ?? null);
+        if ($idPedido === null || $idPedido <= 0) {
+            $_SESSION['mensaje_error'] = 'Pedido no válido.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $pedido = $this->modeloPedido->obtenerDetallePedido($idPedido);
+        if (!$pedido) {
+            $_SESSION['mensaje_error'] = 'Pedido no encontrado.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $detalles = $this->modeloPedido->listarDetallesHistorialPedido($idPedido);
+        $titulo = 'Pedido #' . $idPedido . ' - Ferredog';
+        $scriptExtra = 'pedidos.js';
+
+        require_once BASE_PATH . '/app/views/layout/header.php';
+        require_once BASE_PATH . '/app/views/layout/sidebar.php';
+        require_once BASE_PATH . '/app/views/pedidos/detalle.php';
         require_once BASE_PATH . '/app/views/layout/footer.php';
     }
 

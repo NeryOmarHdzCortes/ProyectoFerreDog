@@ -26,6 +26,111 @@ class Pedido {
     }
 
     /**
+     * Lista pedidos por texto y estado, con paginación de la vista administrativa.
+     */
+    public function listarPedidos($busqueda, $estado, $limite, $desplazamiento) {
+        list($condiciones, $parametros) = $this->construirFiltrosPedidos($busqueda, $estado);
+        $sql = "SELECT c.Id_Compras, c.Fecha_Compra, c.Total, c.Estado,
+                       COALESCE(pr.Nombre, c.Nombre_Proveedor) AS Proveedor,
+                       (SELECT COUNT(*) FROM detalle_compras d
+                        WHERE d.Id_Compras = c.Id_Compras) AS Productos
+                FROM compras c
+                LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor"
+            . $condiciones
+            . " ORDER BY c.Fecha_Compra DESC, c.Id_Compras DESC
+                LIMIT ? OFFSET ?";
+        $consulta = $this->pdo->prepare($sql);
+        $indice = 1;
+        foreach ($parametros as $parametro) {
+            $consulta->bindValue($indice++, $parametro, is_int($parametro) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $consulta->bindValue($indice++, (int) $limite, PDO::PARAM_INT);
+        $consulta->bindValue($indice, (int) $desplazamiento, PDO::PARAM_INT);
+        $consulta->execute();
+
+        return $consulta->fetchAll();
+    }
+
+    /**
+     * Cuenta pedidos con los mismos filtros de la lista paginada.
+     */
+    public function contarPedidos($busqueda, $estado) {
+        list($condiciones, $parametros) = $this->construirFiltrosPedidos($busqueda, $estado);
+        $consulta = $this->pdo->prepare(
+            "SELECT COUNT(*)
+             FROM compras c
+             LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor"
+            . $condiciones
+        );
+        $consulta->execute($parametros);
+
+        return (int) $consulta->fetchColumn();
+    }
+
+    /**
+     * Obtiene encabezado y empleados del pedido conservando el proveedor histórico.
+     */
+    public function obtenerDetallePedido($idPedido) {
+        $sql = "SELECT c.Id_Compras, c.Fecha_Compra, c.Total, c.Estado,
+                       c.Fecha_Recepcion,
+                       COALESCE(pr.Nombre, c.Nombre_Proveedor) AS Proveedor,
+                       CONCAT(e.Nombre, ' ', e.Apellidos) AS EmpleadoRegistro,
+                       CONCAT(er.Nombre, ' ', er.Apellidos) AS EmpleadoRecepcion
+                FROM compras c
+                LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor
+                LEFT JOIN empleados e ON e.Id_Empleado = c.Id_Empleado
+                LEFT JOIN empleados er ON er.Id_Empleado = c.Id_Empleado_Recibe
+                WHERE c.Id_Compras = ?";
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute([$idPedido]);
+
+        return $consulta->fetch();
+    }
+
+    /**
+     * Lista detalles de historial aun si el producto fue eliminado.
+     */
+    public function listarDetallesHistorialPedido($idPedido) {
+        $sql = "SELECT d.Id_Detalle, d.Cantidad, d.Cantidad_Recibida,
+                       d.Incidencia, d.Motivo_Incidencia,
+                       d.Precio_Unitario, d.Total AS Subtotal,
+                       COALESCE(p.Nombre, d.Nombre_Producto) AS Producto
+                FROM detalle_compras d
+                LEFT JOIN productos p ON p.Id_Producto = d.Id_Producto
+                WHERE d.Id_Compras = ?
+                ORDER BY d.Id_Detalle";
+        $consulta = $this->pdo->prepare($sql);
+        $consulta->execute([$idPedido]);
+
+        return $consulta->fetchAll();
+    }
+
+    private function construirFiltrosPedidos($busqueda, $estado) {
+        $condiciones = [];
+        $parametros = [];
+
+        if ($estado !== 'Todos') {
+            $condiciones[] = 'c.Estado = ?';
+            $parametros[] = $estado;
+        }
+
+        if ($busqueda !== '') {
+            if (preg_match('/^#?[0-9]+$/', $busqueda) === 1) {
+                $condiciones[] = 'c.Id_Compras = ?';
+                $parametros[] = (int) ltrim($busqueda, '#');
+            } else {
+                $condiciones[] = 'COALESCE(pr.Nombre, c.Nombre_Proveedor) LIKE ?';
+                $parametros[] = '%' . $busqueda . '%';
+            }
+        }
+
+        return [
+            empty($condiciones) ? '' : ' WHERE ' . implode(' AND ', $condiciones),
+            $parametros
+        ];
+    }
+
+    /**
      * Actualiza únicamente pedidos que siguen pendientes.
      */
     public function cancelar($idPedido) {
