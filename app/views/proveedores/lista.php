@@ -43,9 +43,9 @@
                 <div class="col-md-3">
                     <label class="visually-hidden" for="filtroEstadoProveedor">Filtrar por estado</label>
                     <select id="filtroEstadoProveedor" name="estado" class="form-control" data-enviar-al-cambiar>
-                        <option value="" <?php echo ($filtroEstado ?? '') === '' ? 'selected' : ''; ?>>Estado: Todos</option>
-                        <option value="Activo" <?php echo ($filtroEstado ?? '') === 'Activo' ? 'selected' : ''; ?>>Estado: Activos</option>
-                        <option value="Inactivo" <?php echo ($filtroEstado ?? '') === 'Inactivo' ? 'selected' : ''; ?>>Estado: Inactivos</option>
+                        <option value="Activo" <?php echo ($filtroEstado ?? 'Activo') === 'Activo' ? 'selected' : ''; ?>>Estado: Activos</option>
+                        <option value="Inactivo" <?php echo ($filtroEstado ?? 'Activo') === 'Inactivo' ? 'selected' : ''; ?>>Estado: Inactivos</option>
+                        <option value="" <?php echo ($filtroEstado ?? 'Activo') === '' ? 'selected' : ''; ?>>Estado: Todos</option>
                     </select>
                 </div>
             </div>
@@ -93,6 +93,19 @@
                                             href="/ProyectoFerredog/public/index.php?c=proveedor&amp;a=editar&amp;id=<?php echo (int) $proveedor['Id_Proveedor']; ?>"
                                             class="btn btn-sm btn-outline-primary"
                                         >Editar</a>
+                                        <?php if (($proveedor['Estado'] ?? '') === 'Inactivo'): ?>
+                                            <?php
+                                            $idProveedorFila = (int) $proveedor['Id_Proveedor'];
+                                            $confirmacionEliminar = 'Esta acción borra el registro definitivamente. El historial de ventas y compras conservará su nombre. ¿Continuar?';
+                                            ?>
+                                            <form method="POST"
+                                                  action="/ProyectoFerredog/public/index.php?c=proveedor&amp;a=eliminar"
+                                                  data-confirmar-envio
+                                                  data-mensaje-confirmacion="<?php echo htmlspecialchars($confirmacionEliminar, ENT_QUOTES, 'UTF-8'); ?>">
+                                                <input type="hidden" name="id_proveedor" value="<?php echo $idProveedorFila; ?>">
+                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

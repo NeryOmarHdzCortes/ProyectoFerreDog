@@ -60,7 +60,6 @@ class ProductoController {
             $pagina,
             self::PRODUCTOS_POR_PAGINA
         );
-        
         // Obtener catálogos para los filtros
         $categorias = $this->modeloCatalogo->obtenerCategorias();
         $proveedores = $this->modeloProveedor->obtenerActivos();
@@ -126,7 +125,7 @@ class ProductoController {
         $producto = $this->modeloProducto->obtenerPorId($idProducto);
         
         if (!$producto) {
-            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+            $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
             $this->redirigir(self::URL_LISTA);
         }
         
@@ -170,7 +169,7 @@ class ProductoController {
         if ($idProducto > 0) {
             $productoActual = $this->modeloProducto->obtenerPorId($idProducto);
             if (!$productoActual) {
-                $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+                $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
                 $this->redirigir(self::URL_LISTA);
             }
         }
@@ -335,7 +334,7 @@ class ProductoController {
         }
 
         if (!$this->modeloProducto->obtenerPorId($idProducto)) {
-            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+            $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
             $this->redirigir(self::URL_LISTA);
         }
 
@@ -367,7 +366,7 @@ class ProductoController {
         }
 
         if (!$this->modeloProducto->obtenerPorId($idProducto)) {
-            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+            $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
             $this->redirigir(self::URL_LISTA);
         }
 
@@ -377,6 +376,47 @@ class ProductoController {
         } catch (PDOException $e) {
             error_log('Error al desactivar producto: ' . $e->getMessage());
             $_SESSION['mensaje_error'] = 'No se pudo desactivar el producto. Intenta de nuevo.';
+        }
+
+        $this->redirigir(self::URL_LISTA);
+    }
+
+    /**
+     * Eliminar definitivamente un producto inactivo.
+     */
+    public function eliminar() {
+        requerirRol(['Administrador']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $idProducto = $this->obtenerEntero($_POST['id_producto'] ?? null);
+        if ($idProducto === null || $idProducto <= 0) {
+            $_SESSION['mensaje_error'] = 'Producto no válido.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        try {
+            $resultado = $this->modeloProducto->eliminar($idProducto);
+            if ($resultado['resultado'] === 'activo') {
+                $_SESSION['mensaje_error'] = 'Primero desactiva el registro para poder eliminarlo.';
+            } elseif ($resultado['resultado'] === 'borrado') {
+                $_SESSION['mensaje_exito'] = 'Producto eliminado definitivamente.';
+            } else {
+                $_SESSION['mensaje_error'] = 'Producto no encontrado.';
+            }
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Error al eliminar producto: ' . $error->getMessage());
+            $codigoSql = $error instanceof PDOException
+                ? (string) ($error->errorInfo[0] ?? $error->getCode())
+                : '';
+            $_SESSION['mensaje_error'] = $codigoSql === '23000'
+                ? 'No se puede eliminar el producto porque tiene registros relacionados.'
+                : 'No se pudo eliminar el producto. Intenta de nuevo.';
         }
 
         $this->redirigir(self::URL_LISTA);

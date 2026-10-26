@@ -67,9 +67,9 @@
                         
                         <div class="filtro-item">
                             <select name="estado" class="form-control">
-                                <option value="">Estado: Todos</option>
-                                <option value="Activo" <?php echo $filtroEstado === 'Activo' ? 'selected' : ''; ?>>Activos</option>
-                                <option value="Inactivo" <?php echo $filtroEstado === 'Inactivo' ? 'selected' : ''; ?>>Inactivos</option>
+                                <option value="Activo" <?php echo $filtroEstado === 'Activo' ? 'selected' : ''; ?>>Estado: Activos</option>
+                                <option value="Inactivo" <?php echo $filtroEstado === 'Inactivo' ? 'selected' : ''; ?>>Estado: Inactivos</option>
+                                <option value="" <?php echo $filtroEstado === '' ? 'selected' : ''; ?>>Estado: Todos</option>
                             </select>
                         </div>
                         
@@ -116,7 +116,13 @@
                                         <td><?php echo htmlspecialchars($producto['Nombre']); ?></td>
                                         <td><?php echo htmlspecialchars($producto['Marca'] ?? ''); ?></td>
                                         <td><?php echo htmlspecialchars($producto['Categoria'] ?? ''); ?></td>
-                                        <td><?php echo htmlspecialchars($producto['Proveedor'] ?? ''); ?></td>
+                                        <td>
+                                            <?php if (empty($producto['Proveedor'])): ?>
+                                                <span class="text-danger">Sin proveedor</span>
+                                            <?php else: ?>
+                                                <?php echo htmlspecialchars($producto['Proveedor'], ENT_QUOTES, 'UTF-8'); ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <?php if ($producto['Precio_Venta']): ?>
                                                 $<?php echo number_format($producto['Precio_Venta'], 2); ?>
@@ -146,11 +152,25 @@
                                                     <?php endif; ?>
 
                                                     <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
-                                                        <button type="button" 
-                                                                class="btn btn-sm btn-secondary"
-                                                                onclick="confirmarDesactivar(<?php echo $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES); ?>')">
-                                                            Desactivar
-                                                        </button>
+                                                        <?php if ($producto['Estado'] === 'Activo'): ?>
+                                                            <button type="button"
+                                                                    class="btn btn-sm btn-secondary"
+                                                                    onclick="confirmarDesactivar(<?php echo (int) $producto['Id_Producto']; ?>, '<?php echo htmlspecialchars($producto['Nombre'], ENT_QUOTES, 'UTF-8'); ?>')">
+                                                                Desactivar
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <?php
+                                                            $idProductoFila = (int) $producto['Id_Producto'];
+                                                            $confirmacionEliminar = 'Esta acción borra el registro definitivamente. El historial de ventas y compras conservará su nombre. ¿Continuar?';
+                                                            ?>
+                                                            <form method="POST"
+                                                                  action="/ProyectoFerredog/public/index.php?c=producto&amp;a=eliminar"
+                                                                  data-confirmar-envio
+                                                                  data-mensaje-confirmacion="<?php echo htmlspecialchars($confirmacionEliminar, ENT_QUOTES, 'UTF-8'); ?>">
+                                                                <input type="hidden" name="id_producto" value="<?php echo $idProductoFila; ?>">
+                                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                                            </form>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
                                             </td>

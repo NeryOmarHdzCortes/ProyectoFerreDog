@@ -30,9 +30,9 @@ class ProveedorController {
      */
     public function lista() {
         $busqueda = $this->obtenerTexto($_GET['busqueda'] ?? '');
-        $filtroEstado = $this->obtenerTexto($_GET['estado'] ?? '');
+        $filtroEstado = $this->obtenerTexto($_GET['estado'] ?? 'Activo');
         if (!in_array($filtroEstado, ['', 'Activo', 'Inactivo'], true)) {
-            $filtroEstado = '';
+            $filtroEstado = 'Activo';
         }
 
         $proveedores = $this->modeloProveedor->obtenerTodos($busqueda, $filtroEstado);
@@ -263,6 +263,49 @@ class ProveedorController {
         } catch (PDOException $e) {
             error_log('Error al desactivar proveedor: ' . $e->getMessage());
             $_SESSION['mensaje_error'] = 'No se pudo desactivar el proveedor. Intenta de nuevo.';
+        }
+
+        $this->redirigir(self::URL_LISTA);
+    }
+
+    /**
+     * Eliminar definitivamente un proveedor inactivo y desasignar sus productos.
+     */
+    public function eliminar() {
+        requerirRol(['Administrador']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $idProveedor = $this->obtenerEntero($_POST['id_proveedor'] ?? null);
+        if ($idProveedor === null || $idProveedor <= 0) {
+            $_SESSION['mensaje_error'] = 'Proveedor no válido.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        try {
+            $resultado = $this->modeloProveedor->eliminar($idProveedor);
+            if ($resultado['resultado'] === 'activo') {
+                $_SESSION['mensaje_error'] = 'Primero desactiva el registro para poder eliminarlo.';
+            } elseif ($resultado['resultado'] === 'borrado') {
+                $_SESSION['mensaje_exito'] = 'Proveedor eliminado. '
+                    . (int) $resultado['productos_desasignados']
+                    . ' productos quedaron sin proveedor.';
+            } else {
+                $_SESSION['mensaje_error'] = 'Proveedor no encontrado.';
+            }
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Error al eliminar proveedor: ' . $error->getMessage());
+            $codigoSql = $error instanceof PDOException
+                ? (string) ($error->errorInfo[0] ?? $error->getCode())
+                : '';
+            $_SESSION['mensaje_error'] = $codigoSql === '23000'
+                ? 'No se puede eliminar el proveedor porque tiene registros relacionados.'
+                : 'No se pudo eliminar el proveedor. Intenta de nuevo.';
         }
 
         $this->redirigir(self::URL_LISTA);

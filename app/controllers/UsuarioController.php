@@ -32,9 +32,15 @@ class UsuarioController {
     public function lista() {
         $busqueda = trim($_GET['busqueda'] ?? '');
         $filtroRol = $_GET['rol'] ?? '';
-        $filtroEstado = $_GET['estado'] ?? '';
+        $filtroEstado = $_GET['estado'] ?? 'Activo';
+        if (!in_array($filtroEstado, ['Activo', 'Inactivo', ''], true)) {
+            $filtroEstado = 'Activo';
+        }
 
         $usuarios = $this->modeloUsuario->obtenerTodos($busqueda, $filtroRol, $filtroEstado);
+        $enlacesPorUsuario = $this->modeloUsuario->contarEnlaces(
+            array_column($usuarios, 'Id_Usuario')
+        );
 
         $titulo = 'Usuarios - Ferredog';
         $scriptExtra = 'usuarios.js';
@@ -43,6 +49,54 @@ class UsuarioController {
         require_once BASE_PATH . '/app/views/layout/sidebar.php';
         require_once BASE_PATH . '/app/views/usuarios/lista.php';
         require_once BASE_PATH . '/app/views/layout/footer.php';
+    }
+
+    /**
+     * Eliminar un usuario inactivo y borrar o anonimizar sus datos personales.
+     */
+    public function eliminar() {
+        requerirRol(['Administrador']);
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        $idUsuario = filter_var($_POST['id_usuario'] ?? null, FILTER_VALIDATE_INT);
+        if ($idUsuario === false || $idUsuario === null || $idUsuario <= 0) {
+            $_SESSION['mensaje_error'] = 'Usuario no válido.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        if ($idUsuario === (int) ($_SESSION['Id_Usuario'] ?? 0)) {
+            $_SESSION['mensaje_error'] = 'No puedes eliminar tu propia cuenta';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        try {
+            $resultado = $this->modeloUsuario->eliminar((int) $idUsuario);
+            if ($resultado['resultado'] === 'activo') {
+                $_SESSION['mensaje_error'] = 'Primero desactiva el registro para poder eliminarlo.';
+            } elseif ($resultado['resultado'] === 'borrado') {
+                $_SESSION['mensaje_exito'] = 'Usuario eliminado por completo.';
+            } elseif ($resultado['resultado'] === 'anonimizado') {
+                $_SESSION['mensaje_exito'] = 'Usuario eliminado. Sus datos personales se borraron y su historial se conservó.';
+            } else {
+                $_SESSION['mensaje_error'] = 'No se encontró el usuario que intentas eliminar.';
+            }
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Error al eliminar usuario: ' . $error->getMessage());
+            $codigoSql = $error instanceof PDOException
+                ? (string) ($error->errorInfo[0] ?? $error->getCode())
+                : '';
+            $_SESSION['mensaje_error'] = $codigoSql === '23000'
+                ? 'No se puede eliminar porque tiene registros relacionados; se queda desactivado.'
+                : 'No se pudo eliminar el usuario. Intenta de nuevo.';
+        }
+
+        $this->redirigir(self::URL_LISTA);
     }
 
     /**

@@ -201,7 +201,7 @@ class Usuario {
      * Nota: cada parámetro tiene nombre distinto porque PDO (con EMULATE_PREPARES = false)
      * no permite repetir el mismo nombre de parámetro en una consulta.
      */
-    public function obtenerTodos($busqueda = '', $rol = '', $estado = '') {
+    public function obtenerTodos($busqueda = '', $rol = '', $estado = 'Activo') {
         $sql = "SELECT u.Id_Usuario, u.Usuario, u.Rol, CASE WHEN u.Estado = 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado,
                        e.Nombre, e.Apellidos, e.Correo
                 FROM usuario u
@@ -233,6 +233,83 @@ class Usuario {
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtener en lote los enlaces de usuarios de una página de resultados.
+     */
+    public function contarEnlaces(array $idsUsuarios): array {
+        $idsUsuarios = array_values(array_unique(array_filter(
+            array_map('intval', $idsUsuarios),
+            function ($id) {
+                return $id > 0;
+            }
+        )));
+        $conteos = [];
+
+        foreach ($idsUsuarios as $idUsuario) {
+            $conteos[$idUsuario] = [
+                'ventas' => 0,
+                'compras' => 0,
+                'movimientos' => 0
+            ];
+        }
+
+        if (empty($idsUsuarios)) {
+            return $conteos;
+        }
+
+        $marcadores = [];
+        $parametros = [];
+        foreach ($idsUsuarios as $indice => $idUsuario) {
+            $marcador = ':usuario' . $indice;
+            $marcadores[] = $marcador;
+            $parametros['usuario' . $indice] = $idUsuario;
+        }
+        $listaMarcadores = implode(', ', $marcadores);
+        $consultaEmpleados = $this->pdo->prepare(
+            "SELECT Id_Usuario, Id_Empleado FROM usuario WHERE Id_Usuario IN ({$listaMarcadores})"
+        );
+        $consultaEmpleados->execute($parametros);
+        $usuariosPorEmpleado = [];
+        foreach ($consultaEmpleados->fetchAll(PDO::FETCH_ASSOC) as $usuario) {
+            $usuariosPorEmpleado[(int) $usuario['Id_Empleado']] = (int) $usuario['Id_Usuario'];
+        }
+
+        if (empty($usuariosPorEmpleado)) {
+            return $conteos;
+        }
+
+        $marcadores = [];
+        $parametros = [];
+        foreach (array_keys($usuariosPorEmpleado) as $indice => $idEmpleado) {
+            $marcador = ':empleado' . $indice;
+            $marcadores[] = $marcador;
+            $parametros['empleado' . $indice] = $idEmpleado;
+        }
+        $listaMarcadores = implode(', ', $marcadores);
+        $relaciones = [
+            'ventas' => ['ventas', 'Id_Empleado'],
+            'compras' => ['compras', 'Id_Empleado'],
+            'movimientos' => ['movimiento_inventario', 'Id_Empleado']
+        ];
+
+        foreach ($relaciones as $nombre => $relacion) {
+            list($tabla, $columnaEmpleado) = $relacion;
+            $consulta = $this->pdo->prepare(
+                "SELECT {$columnaEmpleado}, COUNT(*) AS cantidad
+                 FROM {$tabla}
+                 WHERE {$columnaEmpleado} IN ({$listaMarcadores})
+                 GROUP BY {$columnaEmpleado}"
+            );
+            $consulta->execute($parametros);
+            foreach ($consulta->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+                $idUsuario = $usuariosPorEmpleado[(int) $fila[$columnaEmpleado]];
+                $conteos[$idUsuario][$nombre] = (int) $fila['cantidad'];
+            }
+        }
+
+        return $conteos;
     }
 
     /**
@@ -381,5 +458,70 @@ class Usuario {
             'estado' => $this->estadoANumero($estado),
             'id' => $idUsuario
         ]);
+    }
+
+    /**
+     * Eliminar un usuario y borrar o anonimizar al empleado según su historial.
+     */
+    public function eliminar(int $idUsuario): array {
+        $iniciaTransaccion = !$this->pdo->inTransaction();
+        if ($iniciaTransaccion) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $consulta = $this->pdo->prepare(
+                'SELECT Id_Empleado, Estado FROM usuario WHERE Id_Usuario = :id FOR UPDATE'
+            );
+            $consulta->execute(['id' => $idUsuario]);
+            $usuario = $consulta->fetch(PDO::FETCH_ASSOC);
+
+            if (!$usuario) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'no_encontrado'];
+            }
+            if ((int) $usuario['Estado'] === 1) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'activo'];
+            }
+
+            $conteos = $this->contarEnlaces([$idUsuario])[$idUsuario];
+            $tieneEnlaces = array_sum($conteos) > 0;
+            $eliminarUsuario = $this->pdo->prepare(
+                'DELETE FROM usuario WHERE Id_Usuario = :id'
+            );
+            $eliminarUsuario->execute(['id' => $idUsuario]);
+
+            if ($tieneEnlaces) {
+                $anonimizarEmpleado = $this->pdo->prepare(
+                    "UPDATE empleados
+                     SET Nombre = 'Empleado', Apellidos = 'Eliminado', Correo = NULL,
+                         Telefono = NULL, Puesto = NULL, Estado = 0
+                     WHERE Id_Empleado = :id"
+                );
+                $anonimizarEmpleado->execute(['id' => $usuario['Id_Empleado']]);
+                $resultado = 'anonimizado';
+            } else {
+                $eliminarEmpleado = $this->pdo->prepare(
+                    'DELETE FROM empleados WHERE Id_Empleado = :id'
+                );
+                $eliminarEmpleado->execute(['id' => $usuario['Id_Empleado']]);
+                $resultado = 'borrado';
+            }
+
+            if ($iniciaTransaccion) {
+                $this->pdo->commit();
+            }
+            return ['resultado' => $resultado];
+        } catch (Throwable $error) {
+            if ($iniciaTransaccion && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
     }
 }

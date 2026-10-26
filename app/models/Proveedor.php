@@ -41,11 +41,11 @@ class Proveedor {
     /**
      * Obtener todos los proveedores con filtros
      */
-    public function obtenerTodos($busqueda = '', $estado = '') {
+    public function obtenerTodos($busqueda = '', $estado = 'Activo') {
         $sql = "SELECT Id_Proveedor, Nombre, Tipo, Contacto, Telefono, Correo,
                        CASE Estado WHEN 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado
                 FROM proveedor
-                WHERE 1=1";
+                WHERE Estado IN (0, 1)";
         
         $params = [];
         
@@ -55,7 +55,7 @@ class Proveedor {
             $params['busqueda2'] = "%{$busqueda}%";
         }
         
-        if ($estado !== '') {
+        if ($estado === 'Activo' || $estado === 'Inactivo') {
             $estadoNumerico = $this->estadoANumero($estado);
             $sql .= " AND Estado = :estado";
             $params['estado'] = $estadoNumerico;
@@ -68,7 +68,7 @@ class Proveedor {
         
         return $stmt->fetchAll();
     }
-    
+
     /**
      * Obtener un proveedor por ID
      */
@@ -76,7 +76,7 @@ class Proveedor {
         $sql = "SELECT Id_Proveedor, Nombre, Tipo, Contacto, Telefono, Correo, Direccion,
                        CASE Estado WHEN 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado
                 FROM proveedor
-                WHERE Id_Proveedor = :id";
+                WHERE Id_Proveedor = :id AND Estado IN (0, 1)";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $idProveedor]);
@@ -165,9 +165,69 @@ class Proveedor {
      * Desactivar un proveedor conservando su registro
      */
     public function desactivar($idProveedor) {
-        $sql = "UPDATE proveedor SET Estado = 0 WHERE Id_Proveedor = :id";
+        $sql = "UPDATE proveedor SET Estado = 0 WHERE Id_Proveedor = :id AND Estado IN (0, 1)";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $idProveedor]);
+    }
+
+    /**
+     * Desasignar sus productos y eliminar definitivamente un proveedor inactivo.
+     */
+    public function eliminar(int $idProveedor): array {
+        $iniciaTransaccion = !$this->pdo->inTransaction();
+        if ($iniciaTransaccion) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $consulta = $this->pdo->prepare(
+                'SELECT Estado FROM proveedor WHERE Id_Proveedor = :id FOR UPDATE'
+            );
+            $consulta->execute(['id' => $idProveedor]);
+            $estado = $consulta->fetchColumn();
+
+            if ($estado === false) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'no_encontrado'];
+            }
+            if ((int) $estado === 1) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'activo'];
+            }
+            $desasignarProductos = $this->pdo->prepare(
+                'UPDATE productos SET Id_Proveedor = NULL WHERE Id_Proveedor = :id'
+            );
+            $desasignarProductos->execute(['id' => $idProveedor]);
+            $productosDesasignados = $desasignarProductos->rowCount();
+
+            $eliminarProveedor = $this->pdo->prepare(
+                'DELETE FROM proveedor WHERE Id_Proveedor = :id'
+            );
+            $eliminarProveedor->execute(['id' => $idProveedor]);
+            if ($eliminarProveedor->rowCount() !== 1) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'no_encontrado'];
+            }
+
+            if ($iniciaTransaccion) {
+                $this->pdo->commit();
+            }
+            return [
+                'resultado' => 'borrado',
+                'productos_desasignados' => $productosDesasignados
+            ];
+        } catch (Throwable $error) {
+            if ($iniciaTransaccion && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
     }
     
     /**
@@ -177,6 +237,8 @@ class Proveedor {
         $sql = "SELECT p.Codigo_Barras, p.Nombre, COALESCE(i.Existencias, 0) AS Existencias, p.Stock_Minimo
                 FROM productos p
                 LEFT JOIN inventario i ON p.Id_Producto = i.Id_Producto
+                LEFT JOIN proveedor prov ON prov.Id_Proveedor = p.Id_Proveedor
+                    AND prov.Estado IN (0, 1)
                 WHERE p.Id_Proveedor = :proveedor AND p.Estado = 1";
         
         $params = ['proveedor' => $idProveedor];
@@ -199,7 +261,11 @@ class Proveedor {
      * Contar productos que surte un proveedor
      */
     public function contarProductosQueSurte($idProveedor) {
-        $sql = "SELECT COUNT(*) FROM productos WHERE Id_Proveedor = :proveedor AND Estado = 1";
+        $sql = "SELECT COUNT(*)
+                FROM productos p
+                LEFT JOIN proveedor prov ON prov.Id_Proveedor = p.Id_Proveedor
+                    AND prov.Estado IN (0, 1)
+                WHERE p.Id_Proveedor = :proveedor AND p.Estado = 1";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['proveedor' => $idProveedor]);

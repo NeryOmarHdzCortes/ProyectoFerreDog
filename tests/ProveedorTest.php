@@ -66,7 +66,7 @@ class ProveedorTest extends TestCase
                 for ($indice = 0; $indice < 2; $indice++) {
                     $sufijo = $this->sufijoUnico();
                     $codigo = 'TEST_Codigo_' . $sufijo;
-                    $nombre = 'TEST_ProductoProveedor_' . $sufijo;
+                    $nombre = 'TESTProductoProveedor' . $this->sufijoLetrasAleatorias();
                     $modeloProducto->crear(
                         $codigo,
                         $nombre,
@@ -82,10 +82,136 @@ class ProveedorTest extends TestCase
                 }
 
                 $this->assertEquals(2, (int) $this->modelo->contarProductosQueSurte($idProveedor));
-                $productos = $this->modelo->obtenerProductosQueSurte($idProveedor, 'TEST_ProductoProveedor_');
+                $productos = $this->modelo->obtenerProductosQueSurte($idProveedor, 'TESTProductoProveedor');
                 $this->assertEquals(2, count($productos));
                 $this->assertTrue(in_array($nombres[0], array_column($productos, 'Nombre'), true));
                 $this->assertTrue(in_array($nombres[1], array_column($productos, 'Nombre'), true));
+            });
+        });
+
+        $this->probar('HU6-04', 'HU-6', 'Eliminar proveedor inactivo sin enlaces y rechazar activos', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $idProveedor = $this->ultimoProveedor($proveedor['nombre']);
+
+                $resultadoActivo = $this->modelo->eliminar($idProveedor);
+                $this->assertEquals('activo', $resultadoActivo['resultado']);
+                $this->assertTrue($this->modelo->obtenerPorId($idProveedor) !== false);
+
+                $this->modelo->desactivar($idProveedor);
+                $resultadoInactivo = $this->modelo->eliminar($idProveedor);
+                $this->assertEquals('borrado', $resultadoInactivo['resultado']);
+                $this->assertFalse($this->modelo->obtenerPorId($idProveedor));
+            });
+        });
+
+        $this->probar('HU6-05', 'HU-6', 'Eliminar proveedor sin compras y desasignar sus productos', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $idProveedor = $this->ultimoProveedor($proveedor['nombre']);
+                $referencias = $this->obtenerReferenciasProducto();
+                $sufijo = $this->sufijoLetrasAleatorias();
+                $modeloProducto = new Producto($this->pdo);
+                $modeloProducto->crear(
+                    'CodigoAsignado' . $sufijo,
+                    'ProductoAsignado' . $sufijo,
+                    $referencias['marca'],
+                    $referencias['categoria'],
+                    $idProveedor,
+                    $referencias['unidad'],
+                    50.00,
+                    1,
+                    1
+                );
+
+                $this->modelo->desactivar($idProveedor);
+                $resultado = $this->modelo->eliminar($idProveedor);
+                $this->assertEquals('borrado', $resultado['resultado']);
+                $this->assertEquals(1, $resultado['productos_desasignados']);
+                $this->assertFalse($this->modelo->obtenerPorId($idProveedor));
+
+                $consultaProveedorProducto = $this->pdo->prepare(
+                    'SELECT Id_Proveedor FROM productos WHERE Nombre = :nombre'
+                );
+                $consultaProveedorProducto->execute(['nombre' => 'ProductoAsignado' . $sufijo]);
+                $this->assertNull($consultaProveedorProducto->fetchColumn());
+
+                $productoSinProveedor = $modeloProducto->obtenerTodos(
+                    'ProductoAsignado' . $sufijo,
+                    0,
+                    0,
+                    ''
+                );
+                $this->assertEquals('ProductoAsignado' . $sufijo, $productoSinProveedor[0]['Nombre']);
+                $this->assertNull($productoSinProveedor[0]['Proveedor']);
+            });
+        });
+
+        $this->probar('HU6-06', 'HU-6', 'Eliminar proveedor con compras y conservar sus datos en el historial', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $idProveedor = $this->ultimoProveedor($proveedor['nombre']);
+                $actualizarRFC = $this->pdo->prepare(
+                    'UPDATE proveedor SET RFC = :rfc WHERE Id_Proveedor = :id'
+                );
+                $actualizarRFC->execute(['rfc' => 'ABC010101A1', 'id' => $idProveedor]);
+                $idEmpleado = (int) $this->pdo
+                    ->query('SELECT Id_Empleado FROM empleados ORDER BY Id_Empleado LIMIT 1')
+                    ->fetchColumn();
+                $this->assertTrue($idEmpleado > 0, 'Se requiere un empleado para la compra.');
+                $referencias = $this->obtenerReferenciasProducto();
+                $sufijo = $this->sufijoLetrasAleatorias();
+                $modeloProducto = new Producto($this->pdo);
+                $modeloProducto->crear(
+                    'CodigoCompra' . $sufijo,
+                    'ProductoCompra' . $sufijo,
+                    $referencias['marca'],
+                    $referencias['categoria'],
+                    $idProveedor,
+                    $referencias['unidad'],
+                    50.00,
+                    1,
+                    1
+                );
+
+                $insertarCompra = $this->pdo->prepare(
+                    "INSERT INTO compras (Total, Estado, Id_Proveedor, Id_Empleado)
+                     VALUES (1, 'Recibida', :proveedor, :empleado)"
+                );
+                $insertarCompra->execute([
+                    'proveedor' => $idProveedor,
+                    'empleado' => $idEmpleado
+                ]);
+
+                $this->modelo->desactivar($idProveedor);
+                $resultado = $this->modelo->eliminar($idProveedor);
+                $this->assertEquals('borrado', $resultado['resultado']);
+                $this->assertEquals(1, $resultado['productos_desasignados']);
+
+                $this->assertFalse($this->modelo->obtenerPorId($idProveedor));
+                $consultaCompra = $this->pdo->prepare(
+                    'SELECT Id_Proveedor, Nombre_Proveedor, RFC_Proveedor
+                     FROM compras WHERE Id_Proveedor IS NULL AND Nombre_Proveedor = :nombre'
+                );
+                $consultaCompra->execute(['nombre' => $proveedor['nombre']]);
+                $compra = $consultaCompra->fetch(PDO::FETCH_ASSOC);
+                $this->assertNull($compra['Id_Proveedor']);
+                $this->assertEquals($proveedor['nombre'], $compra['Nombre_Proveedor']);
+                $this->assertEquals('ABC010101A1', $compra['RFC_Proveedor']);
+                $productoSinProveedor = $modeloProducto->obtenerTodos(
+                    'ProductoCompra' . $sufijo,
+                    0,
+                    0,
+                    ''
+                );
+                $this->assertNull($productoSinProveedor[0]['Proveedor']);
+                $this->assertEquals([], $this->modelo->obtenerTodos($proveedor['nombre'], 'Activo'));
+                $this->assertEquals([], $this->modelo->obtenerTodos($proveedor['nombre'], 'Inactivo'));
+                $this->assertEquals([], $this->modelo->obtenerTodos($proveedor['nombre'], ''));
+                $this->assertFalse(in_array(
+                    $idProveedor,
+                    array_column($this->modelo->obtenerActivos(), 'Id_Proveedor')
+                ));
             });
         });
     }
@@ -94,7 +220,7 @@ class ProveedorTest extends TestCase
     {
         $sufijo = $this->sufijoUnico();
         $proveedor = [
-            'nombre' => 'TEST_Proveedor_' . $sufijo,
+            'nombre' => 'ProveedorPrueba' . $this->sufijoLetrasAleatorias(),
             'correo' => 'test_' . $sufijo . '@gmail.com'
         ];
         $this->assertTrue(Validador::correoValido($proveedor['correo']));

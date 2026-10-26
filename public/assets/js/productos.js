@@ -125,3 +125,11 @@ if (formularioProducto && campoStockMinimo && mensajeStockMinimo) {
         }
     });
 }
+
+document.querySelectorAll('form[data-confirmar-envio]').forEach(function (formulario) {
+    formulario.addEventListener('submit', function (evento) {
+        if (!window.confirm(formulario.dataset.mensajeConfirmacion)) {
+            evento.preventDefault();
+        }
+    });
+});

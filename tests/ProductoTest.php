@@ -59,7 +59,7 @@ class ProductoTest extends TestCase
 
         $this->probar('HU5-03', 'HU-5', 'Paginación limitada a un máximo de 10 productos', function () {
             $this->enTransaccion(function () {
-                $prefijo = 'TEST_Paginacion_' . $this->sufijoUnico();
+                $prefijo = 'TESTPaginacion' . $this->sufijoLetrasAleatorias();
                 for ($indice = 0; $indice < 12; $indice++) {
                     $this->crearProducto($prefijo . '_' . $indice, $prefijo . '_COD_' . $indice);
                 }
@@ -122,6 +122,87 @@ class ProductoTest extends TestCase
                 $this->assertEquals(1, (int) $consulta->fetchColumn());
             });
         });
+
+        $this->probar('HU5-08', 'HU-5', 'Eliminar producto inactivo sin enlaces y rechazar activos', function () {
+            $this->enTransaccion(function () {
+                $sufijo = $this->sufijoLetrasAleatorias();
+                $producto = $this->crearProducto('ProductoPrueba' . $sufijo, 'CodigoProducto' . $sufijo);
+
+                $resultadoActivo = $this->modelo->eliminar($producto['id']);
+                $this->assertEquals('activo', $resultadoActivo['resultado']);
+                $this->assertNotNull($this->modelo->obtenerPorId($producto['id']));
+
+                $this->modelo->desactivar($producto['id']);
+                $resultadoInactivo = $this->modelo->eliminar($producto['id']);
+                $this->assertEquals('borrado', $resultadoInactivo['resultado']);
+                $this->assertFalse($this->modelo->obtenerPorId($producto['id']));
+                $consultaInventario = $this->pdo->prepare(
+                    'SELECT COUNT(*) FROM inventario WHERE Id_Producto = :id'
+                );
+                $consultaInventario->execute(['id' => $producto['id']]);
+                $this->assertEquals(0, (int) $consultaInventario->fetchColumn());
+            });
+        });
+
+        $this->probar('HU5-09', 'HU-5', 'Eliminar producto con historial y conservar los datos de venta', function () {
+            $this->enTransaccion(function () {
+                $sufijo = $this->sufijoLetrasAleatorias();
+                $producto = $this->crearProducto('ProductoVenta' . $sufijo, 'CodigoVenta' . $sufijo);
+                $idEmpleado = (int) $this->pdo
+                    ->query('SELECT Id_Empleado FROM empleados ORDER BY Id_Empleado LIMIT 1')
+                    ->fetchColumn();
+                $idMetodoPago = (int) $this->pdo
+                    ->query('SELECT Id_Metodo_Pago FROM metodo_pago ORDER BY Id_Metodo_Pago LIMIT 1')
+                    ->fetchColumn();
+                $this->assertTrue($idEmpleado > 0, 'Se requiere un empleado para la venta.');
+                $this->assertTrue($idMetodoPago > 0, 'Se requiere un método de pago para la venta.');
+
+                $insertarVenta = $this->pdo->prepare(
+                    "INSERT INTO ventas (Total, Estado, Id_Metodo_Pago, Id_Empleado)
+                     VALUES (1, 'Completada', :metodo_pago, :empleado)"
+                );
+                $insertarVenta->execute([
+                    'metodo_pago' => $idMetodoPago,
+                    'empleado' => $idEmpleado
+                ]);
+                $idVenta = (int) $this->pdo->lastInsertId();
+                $insertarDetalle = $this->pdo->prepare(
+                    'INSERT INTO detalle_ventas
+                     (Cantidad, Precio_Unitario, Descuento, Subtotal, Id_Ventas, Id_Producto)
+                     VALUES (1, 1, 0, 1, :venta, :producto)'
+                );
+                $insertarDetalle->execute([
+                    'venta' => $idVenta,
+                    'producto' => $producto['id']
+                ]);
+
+                $this->modelo->desactivar($producto['id']);
+                $resultado = $this->modelo->eliminar($producto['id']);
+                $this->assertEquals('borrado', $resultado['resultado']);
+                $this->assertFalse($this->modelo->obtenerPorId($producto['id']));
+
+                foreach (['Activo', 'Inactivo', ''] as $estado) {
+                    $this->assertEquals(
+                        0,
+                        $this->modelo->contarFiltrados($producto['nombre'], 0, 0, $estado)
+                    );
+                    $this->assertEquals(
+                        [],
+                        $this->modelo->obtenerTodos($producto['nombre'], 0, 0, $estado)
+                    );
+                }
+
+                $consultaDetalle = $this->pdo->prepare(
+                    'SELECT Id_Producto, Codigo_Producto, Nombre_Producto
+                     FROM detalle_ventas WHERE Id_Ventas = :venta'
+                );
+                $consultaDetalle->execute(['venta' => $idVenta]);
+                $detalle = $consultaDetalle->fetch(PDO::FETCH_ASSOC);
+                $this->assertNull($detalle['Id_Producto']);
+                $this->assertEquals($producto['codigo'], $detalle['Codigo_Producto']);
+                $this->assertEquals($producto['nombre'], $detalle['Nombre_Producto']);
+            });
+        });
     }
 
     private function crearProducto(
@@ -132,7 +213,7 @@ class ProductoTest extends TestCase
     {
         $sufijo = $this->sufijoUnico();
         $producto = [
-            'nombre' => $nombre ?? 'TEST_Producto_' . $sufijo,
+            'nombre' => $nombre ?? 'TESTProducto' . $this->sufijoLetrasAleatorias(),
             'codigo' => $codigo ?? 'TEST_Codigo_' . $sufijo
         ];
 

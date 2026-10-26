@@ -26,7 +26,7 @@ class Producto {
     }
     
     private function construirFiltros($busqueda, $idCategoria, $idProveedor, $estado) {
-        $condiciones = " WHERE 1=1";
+        $condiciones = " WHERE p.Estado IN (0, 1)";
         $parametros = [];
 
         if ($busqueda !== '') {
@@ -63,7 +63,7 @@ class Producto {
      * @param int $limite Productos por página
      * @return array Lista de productos con datos del JOIN
      */
-    public function obtenerTodos($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = '', $pagina = 1, $limite = 10) {
+    public function obtenerTodos($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = 'Activo', $pagina = 1, $limite = 10) {
         $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta,
                        p.Stock_Minimo, p.Stock_Maximo,
                        m.Nombre AS Marca,
@@ -96,7 +96,7 @@ class Producto {
     /**
      * Contar productos que coinciden con los filtros de la lista
      */
-    public function contarFiltrados($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = '') {
+    public function contarFiltrados($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = 'Activo') {
         list($condiciones, $parametros) = $this->construirFiltros($busqueda, $idCategoria, $idProveedor, $estado);
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM productos p" . $condiciones);
 
@@ -108,7 +108,7 @@ class Producto {
         $stmt->execute();
         return (int) $stmt->fetchColumn();
     }
-    
+
     /**
      * Obtener un producto por ID con sus datos completos
      * @param int $idProducto
@@ -122,7 +122,7 @@ class Producto {
                        CASE p.Estado WHEN 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado
                 FROM productos p
                 LEFT JOIN inventario i ON p.Id_Producto = i.Id_Producto
-                WHERE p.Id_Producto = :id";
+                WHERE p.Id_Producto = :id AND p.Estado IN (0, 1)";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $idProducto]);
@@ -221,7 +221,7 @@ class Producto {
     public function cambiarEstado($idProducto, $estado) {
         $estadoNumerico = $this->estadoANumero($estado);
         
-        $sql = "UPDATE productos SET Estado = :estado WHERE Id_Producto = :id";
+        $sql = "UPDATE productos SET Estado = :estado WHERE Id_Producto = :id AND Estado IN (0, 1)";
         
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
@@ -247,10 +247,61 @@ class Producto {
      * Desactivar un producto conservando su registro
      */
     public function desactivar($idProducto) {
-        $sql = "UPDATE productos SET Estado = 0 WHERE Id_Producto = :id";
+        $sql = "UPDATE productos SET Estado = 0 WHERE Id_Producto = :id AND Estado IN (0, 1)";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $idProducto]);
+    }
+
+    /**
+     * Eliminar un producto inactivo y conservar sus nombres en los historiales relacionados.
+     */
+    public function eliminar(int $idProducto): array {
+        $iniciaTransaccion = !$this->pdo->inTransaction();
+        if ($iniciaTransaccion) {
+            $this->pdo->beginTransaction();
+        }
+
+        try {
+            $consulta = $this->pdo->prepare(
+                'SELECT Estado FROM productos WHERE Id_Producto = :id FOR UPDATE'
+            );
+            $consulta->execute(['id' => $idProducto]);
+            $estado = $consulta->fetchColumn();
+
+            if ($estado === false) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'no_encontrado'];
+            }
+            if ((int) $estado === 1) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'activo'];
+            }
+            $eliminarProducto = $this->pdo->prepare(
+                'DELETE FROM productos WHERE Id_Producto = :id'
+            );
+            $eliminarProducto->execute(['id' => $idProducto]);
+            if ($eliminarProducto->rowCount() !== 1) {
+                if ($iniciaTransaccion) {
+                    $this->pdo->rollBack();
+                }
+                return ['resultado' => 'no_encontrado'];
+            }
+
+            if ($iniciaTransaccion) {
+                $this->pdo->commit();
+            }
+            return ['resultado' => 'borrado'];
+        } catch (Throwable $error) {
+            if ($iniciaTransaccion && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
     }
     
     /**

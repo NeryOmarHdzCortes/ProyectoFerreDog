@@ -50,9 +50,9 @@
                         
                         <div class="filtro-item">
                             <select name="estado" class="form-control">
-                                <option value="">Estado: Todos</option>
-                                <option value="Activo" <?php echo $filtroEstado === 'Activo' ? 'selected' : ''; ?>>Activo</option>
-                                <option value="Inactivo" <?php echo $filtroEstado === 'Inactivo' ? 'selected' : ''; ?>>Inactivo</option>
+                                <option value="Activo" <?php echo $filtroEstado === 'Activo' ? 'selected' : ''; ?>>Estado: Activos</option>
+                                <option value="Inactivo" <?php echo $filtroEstado === 'Inactivo' ? 'selected' : ''; ?>>Estado: Inactivos</option>
+                                <option value="" <?php echo $filtroEstado === '' ? 'selected' : ''; ?>>Estado: Todos</option>
                             </select>
                         </div>
                         
@@ -108,10 +108,42 @@
                                             </label>
                                         </td>
                                         <td>
-                                            <a href="/ProyectoFerredog/public/index.php?c=usuario&a=editar&id=<?php echo $usuario['Id_Usuario']; ?>" 
-                                               class="btn btn-sm btn-primary">
-                                                Editar
-                                            </a>
+                                            <div class="btn-group">
+                                                <a href="/ProyectoFerredog/public/index.php?c=usuario&a=editar&id=<?php echo $usuario['Id_Usuario']; ?>"
+                                                   class="btn btn-sm btn-primary">
+                                                    Editar
+                                                </a>
+                                                <?php if ($usuario['Estado'] === 'Inactivo'): ?>
+                                                    <?php if ((int) $usuario['Id_Usuario'] === (int) ($_SESSION['Id_Usuario'] ?? 0)): ?>
+                                                        <span class="text-muted" title="No puedes eliminar tu propia cuenta">No puedes eliminar tu propia cuenta</span>
+                                                    <?php else: ?>
+                                                        <?php
+                                                        $idUsuarioFila = (int) $usuario['Id_Usuario'];
+                                                        $nombreCompleto = trim($usuario['Nombre'] . ' ' . $usuario['Apellidos']);
+                                                        $confirmacionEliminar = "Se borrarán definitivamente los datos personales de '{$nombreCompleto}'. Esta acción no se puede deshacer. ¿Continuar?";
+                                                        $enlacesUsuario = $enlacesPorUsuario[$idUsuarioFila] ?? [
+                                                            'ventas' => 0,
+                                                            'compras' => 0,
+                                                            'movimientos' => 0
+                                                        ];
+                                                        $tituloEliminar = array_sum($enlacesUsuario) > 0
+                                                            ? 'Se conservará el historial y se anonimizarán los datos personales.'
+                                                            : 'Se borrarán los datos personales y la cuenta definitivamente.';
+                                                        ?>
+                                                        <form method="POST"
+                                                              action="/ProyectoFerredog/public/index.php?c=usuario&amp;a=eliminar"
+                                                              data-confirmar-envio
+                                                              data-mensaje-confirmacion="<?php echo htmlspecialchars($confirmacionEliminar, ENT_QUOTES, 'UTF-8'); ?>">
+                                                            <input type="hidden" name="id_usuario" value="<?php echo $idUsuarioFila; ?>">
+                                                            <button type="submit"
+                                                                    class="btn btn-sm btn-danger"
+                                                                    title="<?php echo htmlspecialchars($tituloEliminar, ENT_QUOTES, 'UTF-8'); ?>">
+                                                                Eliminar
+                                                            </button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -148,4 +180,3 @@
                 </div>
             </div>
         </div>
-
