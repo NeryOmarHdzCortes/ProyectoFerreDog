@@ -26,13 +26,23 @@ class ProveedorController {
     }
 
     /**
-     * Lista proveedores activos o eliminados con búsqueda.
+     * Lista de proveedores con búsqueda y filtro por estado (W-08)
      */
     public function lista() {
         $busqueda = $this->obtenerTexto($_GET['busqueda'] ?? '');
-        $verEliminados = $this->obtenerTexto($_GET['eliminados'] ?? '') === '1';
-        $proveedores = $this->modeloProveedor->obtenerTodos($busqueda, $verEliminados);
+        $filtroEstado = $this->obtenerTexto($_GET['estado'] ?? '');
+        if (!in_array($filtroEstado, ['', 'Activo', 'Inactivo'], true)) {
+            $filtroEstado = '';
+        }
+
+        $proveedores = $this->modeloProveedor->obtenerTodos($busqueda, $filtroEstado);
         $totalProveedores = count($proveedores);
+        $proveedoresActivos = count(array_filter(
+            $proveedores,
+            function ($proveedor) {
+                return $proveedor['Estado'] === 'Activo';
+            }
+        ));
 
         $titulo = 'Proveedores - Ferredog';
         $scriptExtra = 'proveedores.js';
@@ -112,8 +122,8 @@ class ProveedorController {
                 );
             }
 
-            if (!$proveedorExistente || $proveedorExistente['Estado'] !== 'Activo') {
-                $_SESSION['mensaje_error'] = 'El proveedor no existe o fue eliminado.';
+            if (!$proveedorExistente) {
+                $_SESSION['mensaje_error'] = 'Proveedor no encontrado.';
                 $this->redirigir(self::URL_LISTA);
             }
         }
@@ -232,8 +242,6 @@ class ProveedorController {
      * Desactivar un proveedor sin borrar su registro
      */
     public function desactivar() {
-        requerirRol(['Administrador']);
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirigir(self::URL_LISTA);
         }
@@ -244,54 +252,20 @@ class ProveedorController {
             $this->redirigir(self::URL_LISTA);
         }
 
-        $proveedor = $this->modeloProveedor->obtenerPorId($idProveedor);
-        if (!$proveedor || $proveedor['Estado'] !== 'Activo') {
-            $_SESSION['mensaje_error'] = 'El proveedor no existe o fue eliminado.';
+        if (!$this->modeloProveedor->obtenerPorId($idProveedor)) {
+            $_SESSION['mensaje_error'] = 'Proveedor no encontrado.';
             $this->redirigir(self::URL_LISTA);
         }
 
         try {
             $this->modeloProveedor->desactivar($idProveedor);
-            $_SESSION['mensaje_exito'] = 'Proveedor eliminado.';
+            $_SESSION['mensaje_exito'] = 'Proveedor desactivado correctamente.';
         } catch (PDOException $e) {
-            error_log('Error al eliminar proveedor: ' . $e->getMessage());
-            $_SESSION['mensaje_error'] = 'No se pudo eliminar el proveedor. Intenta de nuevo.';
+            error_log('Error al desactivar proveedor: ' . $e->getMessage());
+            $_SESSION['mensaje_error'] = 'No se pudo desactivar el proveedor. Intenta de nuevo.';
         }
 
         $this->redirigir(self::URL_LISTA);
-    }
-
-    /**
-     * Restaurar un proveedor eliminado, solo para Administrador.
-     */
-    public function restaurar() {
-        requerirRol(['Administrador']);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirigir(self::URL_LISTA . '&eliminados=1');
-        }
-
-        $idProveedor = $this->obtenerEntero($_POST['id_proveedor'] ?? null);
-        if ($idProveedor === null || $idProveedor <= 0) {
-            $_SESSION['mensaje_error'] = 'Proveedor no válido.';
-            $this->redirigir(self::URL_LISTA . '&eliminados=1');
-        }
-
-        try {
-            $proveedor = $this->modeloProveedor->obtenerPorId($idProveedor);
-            if (!$proveedor || $proveedor['Estado'] !== 'Inactivo') {
-                $_SESSION['mensaje_error'] = 'No se encontró un proveedor eliminado para restaurar.';
-                $this->redirigir(self::URL_LISTA . '&eliminados=1');
-            }
-
-            $this->modeloProveedor->restaurar($idProveedor);
-            $_SESSION['mensaje_exito'] = 'Proveedor restaurado.';
-        } catch (Throwable $error) {
-            error_log('Error al restaurar proveedor: ' . $error->getMessage());
-            $_SESSION['mensaje_error'] = 'No se pudo restaurar el proveedor. Intenta de nuevo.';
-        }
-
-        $this->redirigir(self::URL_LISTA . '&eliminados=1');
     }
 
     private function mostrarFormularioProveedor($modoFormulario) {
@@ -302,8 +276,8 @@ class ProveedorController {
         }
 
         $proveedor = $this->modeloProveedor->obtenerPorId($idProveedor);
-        if (!$proveedor || $proveedor['Estado'] !== 'Activo') {
-            $_SESSION['mensaje_error'] = 'El proveedor no existe o fue eliminado.';
+        if (!$proveedor) {
+            $_SESSION['mensaje_error'] = 'Proveedor no encontrado.';
             $this->redirigir(self::URL_LISTA);
         }
 

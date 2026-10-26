@@ -19,6 +19,13 @@ class Proveedor {
     }
     
     /**
+     * Convertir estado texto a numérico
+     */
+    private function estadoANumero($estado) {
+        return $estado === 'Activo' ? 1 : 0;
+    }
+    
+    /**
      * Obtener todos los proveedores activos (para combos)
      */
     public function obtenerActivos() {
@@ -34,18 +41,24 @@ class Proveedor {
     /**
      * Obtener todos los proveedores con filtros
      */
-    public function obtenerTodos($busqueda = '', $eliminados = false) {
+    public function obtenerTodos($busqueda = '', $estado = '') {
         $sql = "SELECT Id_Proveedor, Nombre, Tipo, Contacto, Telefono, Correo,
                        CASE Estado WHEN 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado
                 FROM proveedor
-                WHERE Estado = :estado";
+                WHERE 1=1";
         
-        $params = ['estado' => $eliminados ? 0 : 1];
+        $params = [];
         
         if ($busqueda !== '') {
             $sql .= " AND (Nombre LIKE :busqueda1 OR Contacto LIKE :busqueda2)";
             $params['busqueda1'] = "%{$busqueda}%";
             $params['busqueda2'] = "%{$busqueda}%";
+        }
+        
+        if ($estado !== '') {
+            $estadoNumerico = $this->estadoANumero($estado);
+            $sql .= " AND Estado = :estado";
+            $params['estado'] = $estadoNumerico;
         }
         
         $sql .= " ORDER BY Nombre";
@@ -153,15 +166,6 @@ class Proveedor {
      */
     public function desactivar($idProveedor) {
         $sql = "UPDATE proveedor SET Estado = 0 WHERE Id_Proveedor = :id";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(['id' => $idProveedor]);
-    }
-
-    /**
-     * Restaurar un proveedor eliminado lógicamente.
-     */
-    public function restaurar($idProveedor) {
-        $sql = "UPDATE proveedor SET Estado = 1 WHERE Id_Proveedor = :id";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['id' => $idProveedor]);
     }

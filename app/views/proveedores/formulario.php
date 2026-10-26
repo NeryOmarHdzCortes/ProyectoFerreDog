@@ -166,7 +166,7 @@ $busquedaProductos = $busquedaProductos ?? '';
 
                 <?php if (!$esAgregar): ?>
                     <p class="form-text mb-4">
-                        Al eliminarlo ya no aparece al agregar productos ni al hacer pedidos.<br>
+                        Al desactivarlo ya no aparece al agregar productos ni al hacer pedidos.<br>
                         No se permiten dos proveedores con el mismo nombre o correo.
                     </p>
                 <?php endif; ?>
@@ -180,9 +180,9 @@ $busquedaProductos = $busquedaProductos ?? '';
                             <form method="POST"
                                   action="/ProyectoFerredog/public/index.php?c=proveedor&amp;a=desactivar"
                                   data-confirmar-envio
-                                  data-mensaje-confirmacion="<?php echo htmlspecialchars("¿Eliminar '" . $nombreProveedor . "'? Dejará de aparecer en el sistema. Podrás restaurarlo desde 'Eliminados'.", ENT_QUOTES, 'UTF-8'); ?>">
+                                  data-mensaje-confirmacion="<?php echo htmlspecialchars('¿Desactivar a ' . $nombreProveedor . '? Ya no aparecerá al agregar productos ni al hacer pedidos.', ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="id_proveedor" value="<?php echo $idProveedor; ?>">
-                                <button type="submit" class="btn btn-danger">Eliminar proveedor</button>
+                                <button type="submit" class="btn btn-secondary">Desactivar proveedor</button>
                             </form>
                         <?php elseif ($esVista): ?>
                             <a href="/ProyectoFerredog/public/index.php?c=proveedor&amp;a=editar&amp;id=<?php echo $idProveedor; ?>" class="btn btn-sm btn-outline-primary">
