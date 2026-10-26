@@ -4,10 +4,11 @@ require_once __DIR__ . '/bootstrap.php';
 
 $tipo = $argv[1] ?? '';
 $idSesion = $argv[2] ?? '';
+$idUsuarioSesion = isset($argv[3]) ? (int) $argv[3] : 1;
 session_save_path(sys_get_temp_dir());
 session_id($idSesion);
 session_start();
-$_SESSION['Id_Usuario'] = 1;
+$_SESSION['Id_Usuario'] = $idUsuarioSesion;
 $_SESSION['Rol'] = 'Administrador';
 $_SESSION['ultima_actividad'] = time();
 $_SERVER['REQUEST_METHOD'] = 'POST';
@@ -20,8 +21,10 @@ register_shutdown_function(function () {
 if ($tipo === 'usuario') {
     require_once BASE_PATH . '/app/controllers/UsuarioController.php';
     (new UsuarioController())->guardar();
+} elseif ($tipo === 'usuario-eliminar') {
+    require_once BASE_PATH . '/app/controllers/UsuarioController.php';
+    (new UsuarioController())->eliminar();
 } elseif ($tipo === 'proveedor') {
     require_once BASE_PATH . '/app/controllers/ProveedorController.php';
     (new ProveedorController())->guardar();
 }
-

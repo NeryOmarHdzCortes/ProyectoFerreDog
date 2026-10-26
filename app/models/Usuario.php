@@ -201,12 +201,12 @@ class Usuario {
      * Nota: cada parámetro tiene nombre distinto porque PDO (con EMULATE_PREPARES = false)
      * no permite repetir el mismo nombre de parámetro en una consulta.
      */
-    public function obtenerTodos($busqueda = '', $rol = '', $estado = '') {
+    public function obtenerTodos($busqueda = '', $rol = '') {
         $sql = "SELECT u.Id_Usuario, u.Usuario, u.Rol, CASE WHEN u.Estado = 1 THEN 'Activo' ELSE 'Inactivo' END AS Estado,
                        e.Nombre, e.Apellidos, e.Correo
                 FROM usuario u
                 INNER JOIN empleados e ON u.Id_Empleado = e.Id_Empleado
-                WHERE 1=1";
+                WHERE u.Estado = 1";
 
         $params = [];
 
@@ -220,11 +220,6 @@ class Usuario {
         if ($rol !== '') {
             $sql .= " AND u.Rol = :rol";
             $params['rol'] = $rol;
-        }
-
-        if ($estado === 'Activo' || $estado === 'Inactivo') {
-            $sql .= " AND u.Estado = :estado";
-            $params['estado'] = $this->estadoANumero($estado);
         }
 
         $sql .= " ORDER BY e.Nombre, e.Apellidos";
@@ -339,12 +334,12 @@ class Usuario {
      * Editar usuario: actualiza empleados y usuario.
      * La transacción la abre el controlador (UsuarioController::guardar).
      */
-    public function editar($idUsuario, $nombre, $apellidos, $correo, $rol, $estado) {
+    public function editar($idUsuario, $nombre, $apellidos, $correo, $rol) {
         $idEmpleado = $this->obtenerIdEmpleado($idUsuario);
 
         // 1. Actualizar empleados
         $sql = "UPDATE empleados
-                SET Nombre = :nombre, Apellidos = :apellidos, Correo = :correo, Puesto = :puesto, Estado = :estado
+                SET Nombre = :nombre, Apellidos = :apellidos, Correo = :correo, Puesto = :puesto
                 WHERE Id_Empleado = :id";
 
         $stmt = $this->pdo->prepare($sql);
@@ -353,33 +348,92 @@ class Usuario {
             'apellidos' => $apellidos,
             'correo' => $correo,
             'puesto' => $rol,
-            'estado' => $this->estadoANumero($estado),
             'id' => $idEmpleado
         ]);
 
         // 2. Actualizar usuario
         $sql = "UPDATE usuario
-                SET Rol = :rol, Estado = :estado
+                SET Rol = :rol
                 WHERE Id_Usuario = :id";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([
             'rol' => $rol,
-            'estado' => $this->estadoANumero($estado),
             'id' => $idUsuario
         ]);
     }
 
     /**
-     * Activar o desactivar un usuario desde la lista
+     * Eliminar el usuario y borrar o anonimizar sus datos personales según su historial.
      */
-    public function cambiarEstado($idUsuario, $estado) {
-        $sql = "UPDATE usuario SET Estado = :estado WHERE Id_Usuario = :id";
+    public function eliminar(int $idUsuario): array {
+        $transaccionIniciada = !$this->pdo->inTransaction();
+        if ($transaccionIniciada) {
+            $this->pdo->beginTransaction();
+        }
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            'estado' => $this->estadoANumero($estado),
-            'id' => $idUsuario
-        ]);
+        try {
+            $consulta = $this->pdo->prepare(
+                'SELECT Id_Empleado FROM usuario WHERE Id_Usuario = :id FOR UPDATE'
+            );
+            $consulta->execute(['id' => $idUsuario]);
+            $idEmpleado = $consulta->fetchColumn();
+
+            if ($idEmpleado === false) {
+                throw new RuntimeException('El usuario no existe.');
+            }
+
+            $consulta = $this->pdo->prepare(
+                'SELECT Id_Empleado FROM empleados WHERE Id_Empleado = :id FOR UPDATE'
+            );
+            $consulta->execute(['id' => $idEmpleado]);
+            if ($consulta->fetchColumn() === false) {
+                throw new RuntimeException('El empleado del usuario no existe.');
+            }
+
+            $consulta = $this->pdo->prepare(
+                'SELECT
+                    (SELECT COUNT(*) FROM ventas WHERE Id_Empleado = :id_ventas) AS ventas,
+                    (SELECT COUNT(*) FROM compras WHERE Id_Empleado = :id_compras) AS compras,
+                    (SELECT COUNT(*) FROM movimiento_inventario WHERE Id_Empleado = :id_movimientos) AS movimientos'
+            );
+            $consulta->execute([
+                'id_ventas' => $idEmpleado,
+                'id_compras' => $idEmpleado,
+                'id_movimientos' => $idEmpleado
+            ]);
+            $enlaces = $consulta->fetch(PDO::FETCH_ASSOC);
+
+            $consulta = $this->pdo->prepare('DELETE FROM usuario WHERE Id_Usuario = :id');
+            $consulta->execute(['id' => $idUsuario]);
+
+            if ((int) $enlaces['ventas'] === 0
+                && (int) $enlaces['compras'] === 0
+                && (int) $enlaces['movimientos'] === 0) {
+                $consulta = $this->pdo->prepare('DELETE FROM empleados WHERE Id_Empleado = :id');
+                $consulta->execute(['id' => $idEmpleado]);
+                $resultado = 'borrado';
+            } else {
+                $consulta = $this->pdo->prepare(
+                    "UPDATE empleados
+                     SET Nombre = 'Empleado', Apellidos = 'Eliminado',
+                         Correo = NULL, Telefono = NULL, Puesto = NULL, Estado = 0
+                     WHERE Id_Empleado = :id"
+                );
+                $consulta->execute(['id' => $idEmpleado]);
+                $resultado = 'anonimizado';
+            }
+
+            if ($transaccionIniciada) {
+                $this->pdo->commit();
+            }
+
+            return ['accion' => $resultado];
+        } catch (Throwable $error) {
+            if ($transaccionIniciada && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
     }
 }

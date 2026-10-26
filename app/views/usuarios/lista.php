@@ -49,14 +49,6 @@
                         </div>
                         
                         <div class="filtro-item">
-                            <select name="estado" class="form-control">
-                                <option value="">Estado: Todos</option>
-                                <option value="Activo" <?php echo $filtroEstado === 'Activo' ? 'selected' : ''; ?>>Activo</option>
-                                <option value="Inactivo" <?php echo $filtroEstado === 'Inactivo' ? 'selected' : ''; ?>>Inactivo</option>
-                            </select>
-                        </div>
-                        
-                        <div class="filtro-item">
                             <button type="submit" class="btn btn-secondary">Buscar</button>
                         </div>
                     </div>
@@ -96,22 +88,28 @@
                                                 <?php echo htmlspecialchars($usuario['Rol']); ?>
                                             </span>
                                         </td>
-                                        <td>
-                                            <label class="switch">
-                                                <input 
-                                                    type="checkbox" 
-                                                    <?php echo $usuario['Estado'] === 'Activo' ? 'checked' : ''; ?>
-                                                    <?php echo $usuario['Id_Usuario'] == $_SESSION['Id_Usuario'] ? 'disabled' : ''; ?>
-                                                    onchange="cambiarEstado(<?php echo $usuario['Id_Usuario']; ?>, this.checked)"
-                                                >
-                                                <span class="slider"></span>
-                                            </label>
-                                        </td>
+                                        <td>Activo</td>
                                         <td>
                                             <a href="/ProyectoFerredog/public/index.php?c=usuario&a=editar&id=<?php echo $usuario['Id_Usuario']; ?>" 
                                                class="btn btn-sm btn-primary">
                                                 Editar
                                             </a>
+                                            <?php if (($_SESSION['Rol'] ?? '') === 'Administrador'
+                                                && (int) $usuario['Id_Usuario'] !== (int) ($_SESSION['Id_Usuario'] ?? 0)): ?>
+                                                <?php
+                                                $nombreCompleto = $usuario['Nombre'] . ' ' . $usuario['Apellidos'];
+                                                $confirmacion = "Se borrarán definitivamente los datos personales de '"
+                                                    . $nombreCompleto
+                                                    . "'. Esta acción no se puede deshacer. ¿Continuar?";
+                                                ?>
+                                                <form method="POST"
+                                                      action="/ProyectoFerredog/public/index.php?c=usuario&a=eliminar"
+                                                      class="form-eliminar-usuario d-inline"
+                                                      data-confirmacion="<?php echo htmlspecialchars($confirmacion, ENT_QUOTES, 'UTF-8'); ?>">
+                                                    <input type="hidden" name="id_usuario" value="<?php echo (int) $usuario['Id_Usuario']; ?>">
+                                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                                </form>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -127,25 +125,3 @@
             </div>
         </main>
         
-        <!-- Modal de confirmación para desactivar -->
-        <div id="modalDesactivar" class="modal" style="display: none;">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-titulo">¿Desactivar usuario?</h3>
-                    </div>
-                    <div class="modal-body">
-                        <p id="modalMensaje">El usuario ya no podrá iniciar sesión.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
-                        <form id="formCambiarEstado" method="POST" action="/ProyectoFerredog/public/index.php?c=usuario&a=cambiarEstado" style="display: inline;">
-                            <input type="hidden" name="id_usuario" id="inputIdUsuario">
-                            <input type="hidden" name="nuevo_estado" id="inputNuevoEstado">
-                            <button type="submit" class="btn btn-danger">Desactivar</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-

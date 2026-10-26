@@ -2,29 +2,16 @@
  * JavaScript para gestión de usuarios
  */
 
-// Cambiar estado de usuario (activar/desactivar)
-function cambiarEstado(idUsuario, activar) {
-    if (activar) {
-        // Activar sin confirmación
-        document.getElementById('inputIdUsuario').value = idUsuario;
-        document.getElementById('inputNuevoEstado').value = 'Activo';
-        document.getElementById('formCambiarEstado').submit();
-    } else {
-        // Desactivar con confirmación
-        document.getElementById('inputIdUsuario').value = idUsuario;
-        document.getElementById('inputNuevoEstado').value = 'Inactivo';
-        document.getElementById('modalDesactivar').style.display = 'flex';
-    }
-}
-
-function cerrarModal() {
-    document.getElementById('modalDesactivar').style.display = 'none';
-    // Revertir el switch
-    location.reload();
-}
-
 // Mostrar/ocultar contraseña
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.form-eliminar-usuario').forEach(function (formulario) {
+        formulario.addEventListener('submit', function (evento) {
+            if (!window.confirm(formulario.dataset.confirmacion)) {
+                evento.preventDefault();
+            }
+        });
+    });
+
     const campoCorreo = document.getElementById('correo');
     const errorCorreo = document.getElementById('correo-error');
 
