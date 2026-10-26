@@ -38,9 +38,10 @@ class ProductoController {
         $busqueda = $this->obtenerTexto($_GET['busqueda'] ?? '');
         $filtroCategoria = max(0, $this->obtenerEntero($_GET['categoria'] ?? 0) ?? 0);
         $filtroProveedor = max(0, $this->obtenerEntero($_GET['proveedor'] ?? 0) ?? 0);
-        $verEliminados = ($_SESSION['Rol'] ?? '') === 'Administrador'
-            && $this->obtenerTexto($_GET['eliminados'] ?? '') === '1';
-        $filtroEstado = $verEliminados ? 'Inactivo' : 'Activo';
+        $filtroEstado = $this->obtenerTexto($_GET['estado'] ?? 'Activo'); // Activos por defecto
+        if (!in_array($filtroEstado, ['Activo', 'Inactivo', ''], true)) {
+            $filtroEstado = 'Activo';
+        }
 
         $totalProductos = $this->modeloProducto->contarFiltrados(
             $busqueda,
@@ -71,11 +72,9 @@ class ProductoController {
             'a' => 'lista',
             'busqueda' => $busqueda,
             'categoria' => $filtroCategoria,
-            'proveedor' => $filtroProveedor
+            'proveedor' => $filtroProveedor,
+            'estado' => $filtroEstado
         ];
-        if ($verEliminados) {
-            $parametrosPaginacion['eliminados'] = 1;
-        }
 
         $titulo = 'Productos - Ferredog';
         $scriptExtra = 'productos.js';
@@ -126,8 +125,8 @@ class ProductoController {
         
         $producto = $this->modeloProducto->obtenerPorId($idProducto);
         
-        if (!$producto || $producto['Estado'] !== 'Activo') {
-            $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
+        if (!$producto) {
+            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
             $this->redirigir(self::URL_LISTA);
         }
         
@@ -170,8 +169,8 @@ class ProductoController {
         $productoActual = null;
         if ($idProducto > 0) {
             $productoActual = $this->modeloProducto->obtenerPorId($idProducto);
-            if (!$productoActual || $productoActual['Estado'] !== 'Activo') {
-                $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
+            if (!$productoActual) {
+                $_SESSION['mensaje_error'] = 'Producto no encontrado.';
                 $this->redirigir(self::URL_LISTA);
             }
         }
@@ -326,18 +325,17 @@ class ProductoController {
             $this->redirigir(self::URL_LISTA);
         }
 
-        $producto = $this->modeloProducto->obtenerPorId($idProducto);
-        if (!$producto || $producto['Estado'] !== 'Activo') {
-            $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
-            $this->redirigir(self::URL_LISTA);
-        }
-
         $precioRecibido = $_POST['precio'] ?? null;
         $precioTexto = is_string($precioRecibido) ? trim($precioRecibido) : '';
         $precioVenta = $precioTexto === '' ? false : filter_var($precioTexto, FILTER_VALIDATE_FLOAT);
 
         if ($precioVenta === false || !is_finite($precioVenta) || $precioVenta <= 0) {
             $_SESSION['mensaje_error'] = 'El precio de venta debe ser mayor a 0.';
+            $this->redirigir(self::URL_LISTA);
+        }
+
+        if (!$this->modeloProducto->obtenerPorId($idProducto)) {
+            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
             $this->redirigir(self::URL_LISTA);
         }
 
@@ -353,7 +351,7 @@ class ProductoController {
     }
 
     /**
-     * Eliminar lógicamente un producto.
+     * Desactivar un producto sin eliminar sus datos
      */
     public function desactivar() {
         requerirRol(['Administrador']);
@@ -368,54 +366,20 @@ class ProductoController {
             $this->redirigir(self::URL_LISTA);
         }
 
-        $producto = $this->modeloProducto->obtenerPorId($idProducto);
-        if (!$producto || $producto['Estado'] !== 'Activo') {
-            $_SESSION['mensaje_error'] = 'El producto no existe o fue eliminado.';
+        if (!$this->modeloProducto->obtenerPorId($idProducto)) {
+            $_SESSION['mensaje_error'] = 'Producto no encontrado.';
             $this->redirigir(self::URL_LISTA);
         }
 
         try {
             $this->modeloProducto->desactivar($idProducto);
-            $_SESSION['mensaje_exito'] = 'Producto eliminado.';
+            $_SESSION['mensaje_exito'] = 'Producto desactivado correctamente.';
         } catch (PDOException $e) {
-            error_log('Error al eliminar producto: ' . $e->getMessage());
-            $_SESSION['mensaje_error'] = 'No se pudo eliminar el producto. Intenta de nuevo.';
+            error_log('Error al desactivar producto: ' . $e->getMessage());
+            $_SESSION['mensaje_error'] = 'No se pudo desactivar el producto. Intenta de nuevo.';
         }
 
         $this->redirigir(self::URL_LISTA);
-    }
-
-    /**
-     * Restaurar un producto eliminado, solo para Administrador.
-     */
-    public function restaurar() {
-        requerirRol(['Administrador']);
-
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirigir(self::URL_LISTA . '&eliminados=1');
-        }
-
-        $idProducto = $this->obtenerEntero($_POST['id_producto'] ?? null);
-        if ($idProducto === null || $idProducto <= 0) {
-            $_SESSION['mensaje_error'] = 'Producto no válido.';
-            $this->redirigir(self::URL_LISTA . '&eliminados=1');
-        }
-
-        $producto = $this->modeloProducto->obtenerPorId($idProducto);
-        if (!$producto || $producto['Estado'] !== 'Inactivo') {
-            $_SESSION['mensaje_error'] = 'No se encontró un producto eliminado para restaurar.';
-            $this->redirigir(self::URL_LISTA . '&eliminados=1');
-        }
-
-        try {
-            $this->modeloProducto->restaurar($idProducto);
-            $_SESSION['mensaje_exito'] = 'Producto restaurado.';
-        } catch (PDOException $e) {
-            error_log('Error al restaurar producto: ' . $e->getMessage());
-            $_SESSION['mensaje_error'] = 'No se pudo restaurar el producto. Intenta de nuevo.';
-        }
-
-        $this->redirigir(self::URL_LISTA . '&eliminados=1');
     }
 
     private function obtenerEntero($valor) {
