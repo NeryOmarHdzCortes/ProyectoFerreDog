@@ -937,6 +937,16 @@ input:disabled+.slider {
     background-color: #b91c1c;
 }
 
+.btn-cancelar-pedido {
+    background-color: white;
+    color: var(--rojo);
+    border: 1px solid var(--rojo);
+}
+
+.btn-cancelar-pedido:hover {
+    background-color: var(--rojo-claro);
+}
+
 /* === FORMULARIOS === */
 .ruta-navegacion {
     font-size: 14px;

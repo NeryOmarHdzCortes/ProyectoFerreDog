@@ -34,6 +34,53 @@ class Correo {
             'mensaje' => 'No se pudo enviar el correo. Intenta más tarde.'
         ];
     }
+
+    /**
+     * Notifica al proveedor que su pedido fue cancelado.
+     */
+    public function enviarCancelacion($correo, $proveedor, $idPedido, $total) {
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            error_log('No se envió la cancelación: el correo del proveedor no es válido.');
+            return false;
+        }
+
+        $asunto = 'Ferredog - Pedido #' . (int) $idPedido . ' cancelado';
+        $nombreSeguro = htmlspecialchars($proveedor, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $totalFormateado = number_format((float) $total, 2, '.', ',');
+        $cuerpoHtml = "
+            <h2>Pedido cancelado</h2>
+            <p>Hola {$nombreSeguro},</p>
+            <p>El pedido #" . (int) $idPedido . " por un total de $" . $totalFormateado . " fue cancelado.</p>
+            <p>Ferredog - Control de inventario</p>
+        ";
+        $cuerpoTexto = "Hola {$proveedor}, el pedido #" . (int) $idPedido
+            . " por un total de $" . $totalFormateado . " fue cancelado.";
+
+        if ($this->modo === 'prueba') {
+            $rutaLog = BASE_PATH . '/storage/logs/correos.log';
+            $directorio = dirname($rutaLog);
+            if (!is_dir($directorio) && !mkdir($directorio, 0755, true) && !is_dir($directorio)) {
+                error_log('No se pudo crear el directorio del log de correos.');
+                return false;
+            }
+
+            $linea = '[' . date('Y-m-d H:i:s') . '] ' . $asunto . ' para ' . $correo
+                . ' (' . $proveedor . '), total $' . $totalFormateado . PHP_EOL;
+            if (file_put_contents($rutaLog, $linea, FILE_APPEND | LOCK_EX) === false) {
+                error_log('No se pudo escribir la cancelación en el log de correos.');
+                return false;
+            }
+
+            return true;
+        }
+
+        if ($this->modo !== 'gmail') {
+            error_log('Modo de correo no válido. Configura MAIL_MODO como "prueba" o "gmail".');
+            return false;
+        }
+
+        return $this->enviarNotificacionSMTP($correo, $proveedor, $asunto, $cuerpoHtml, $cuerpoTexto);
+    }
     
     /**
      * Modo prueba: escribir en storage/logs/correos.log
@@ -127,6 +174,48 @@ class Correo {
                 'exito' => false,
                 'mensaje' => 'No se pudo enviar el correo. Intenta más tarde.'
             ];
+        }
+    }
+
+    /**
+     * Envía una notificación HTML mediante la configuración SMTP existente.
+     */
+    private function enviarNotificacionSMTP($correo, $nombre, $asunto, $cuerpoHtml, $cuerpoTexto) {
+        $contraseñaSMTP = $_ENV['MAIL_PASS'] ?? '';
+        $usuarioSMTP = $_ENV['MAIL_USER'] ?? '';
+        $mail = null;
+
+        try {
+            require_once BASE_PATH . '/app/libraries/PHPMailer/src/Exception.php';
+            require_once BASE_PATH . '/app/libraries/PHPMailer/src/PHPMailer.php';
+            require_once BASE_PATH . '/app/libraries/PHPMailer/src/SMTP.php';
+
+            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host = $_ENV['MAIL_HOST'] ?? 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = $usuarioSMTP;
+            $mail->Password = $contraseñaSMTP;
+            $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = (int) ($_ENV['MAIL_PORT'] ?? 587);
+            $mail->CharSet = 'UTF-8';
+            $mail->setFrom($usuarioSMTP, $_ENV['MAIL_FROM_NAME'] ?? 'Ferredog');
+            $mail->addAddress($correo, $nombre);
+            $mail->isHTML(true);
+            $mail->Subject = $asunto;
+            $mail->Body = $cuerpoHtml;
+            $mail->AltBody = $cuerpoTexto;
+            $mail->send();
+
+            return true;
+        } catch (\Throwable $e) {
+            $detalle = $e->getMessage();
+            if ($mail instanceof \PHPMailer\PHPMailer\PHPMailer && $mail->ErrorInfo !== '') {
+                $detalle .= ' ' . $mail->ErrorInfo;
+            }
+            $this->registrarError($detalle, [$contraseñaSMTP, $usuarioSMTP]);
+
+            return false;
         }
     }
     

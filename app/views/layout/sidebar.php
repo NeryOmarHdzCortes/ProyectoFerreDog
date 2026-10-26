@@ -40,15 +40,11 @@
                         <span>Proveedores</span>
                     </a>
                     
-                    <div class="menu-item menu-item-deshabilitado">
+                    <a href="/ProyectoFerredog/public/index.php?c=pedido&a=lista"
+                       class="menu-item <?php echo menuActivo('pedido', $paginaActual); ?>">
                         <span class="menu-icono">📋</span>
-                        <span>Pedidos <small class="badge-sprint">Sprint 2</small></span>
-                    </div>
-                    
-                    <div class="menu-item menu-item-deshabilitado">
-                        <span class="menu-icono">📥</span>
-                        <span>Entradas <small class="badge-sprint">Sprint 2</small></span>
-                    </div>
+                        <span>Pedidos</span>
+                    </a>
                     
                     <div class="menu-item menu-item-deshabilitado">
                         <span class="menu-icono">💰</span>
