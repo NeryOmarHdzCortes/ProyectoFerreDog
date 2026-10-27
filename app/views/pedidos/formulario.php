@@ -71,6 +71,7 @@ $jsonProductosAnteriores = json_encode(
                         <th scope="col">Producto</th>
                         <th scope="col">Marca</th>
                         <th scope="col">Stock actual</th>
+                        <th scope="col">Máx.</th>
                         <th scope="col">Costo</th>
                         <th scope="col">Cantidad</th>
                         <th scope="col">Subtotal</th>
@@ -78,7 +79,7 @@ $jsonProductosAnteriores = json_encode(
                 </thead>
                 <tbody id="productosPedido">
                     <tr>
-                        <td colspan="6" class="text-center">Elige un proveedor para ver sus productos</td>
+                        <td colspan="7" class="text-center">Elige un proveedor para ver sus productos</td>
                     </tr>
                 </tbody>
             </table>

@@ -38,7 +38,7 @@ unset($_SESSION['datos_producto']);
                     <div class="form-grid-2col">
                         <div class="form-group">
                             <label for="codigo">Código *</label>
-                            <input type="text" 
+                            <input type="text"
                                    id="codigo" 
                                    name="codigo" 
                                    class="form-control" 
@@ -48,7 +48,7 @@ unset($_SESSION['datos_producto']);
                         
                         <div class="form-group">
                             <label for="nombre">Nombre del producto *</label>
-                            <input type="text" 
+                            <input type="text"
                                    id="nombre" 
                                    name="nombre" 
                                    class="form-control" 
@@ -132,10 +132,11 @@ unset($_SESSION['datos_producto']);
                     <div class="form-grid-3col">
                         <div class="form-group">
                             <label for="precio_venta">Precio de venta</label>
-                            <input type="number"
+                            <input type="text"
                                    id="precio_venta"
                                    name="precio_venta"
                                    class="form-control"
+                                   data-solo-decimales
                                    step="0.01"
                                    min="0"
                                    value="<?php echo htmlspecialchars($datosProducto['precio_venta'] ?? ($producto['Precio_Venta'] ?? '')); ?>">
@@ -144,19 +145,21 @@ unset($_SESSION['datos_producto']);
                         <div class="form-group">
                             <label for="precio_compra">Precio de compra</label>
                             <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
-                                <input type="number"
+                                <input type="text"
                                        id="precio_compra"
                                        name="precio_compra"
                                        class="form-control"
+                                       data-solo-decimales
                                        step="0.01"
                                        min="0"
                                        value="<?php echo htmlspecialchars($datosProducto['precio_compra'] ?? ($producto['Precio_Compra'] ?? '')); ?>"
                                        aria-describedby="precio_compra_error">
                                 <small id="precio_compra_error" class="form-text text-danger" role="alert" hidden></small>
                             <?php else: ?>
-                                <input type="number"
+                                <input type="text"
                                        id="precio_compra"
                                        class="form-control"
+                                       data-solo-decimales
                                        value="<?php echo htmlspecialchars($producto['Precio_Compra'] ?? ''); ?>"
                                        disabled>
                                 <small class="form-text text-muted">Lo asigna el Administrador</small>
@@ -166,16 +169,18 @@ unset($_SESSION['datos_producto']);
                         <div class="form-group">
                             <label for="stock_inicial">Stock inicial *</label>
                             <?php if ($esEdicion): ?>
-                                <input type="number" 
+                                <input type="text"
                                        id="stock_inicial" 
                                        class="form-control" 
+                                       data-solo-enteros
                                        value="<?php echo $producto['Existencias'] ?? 0; ?>"
                                        disabled>
                             <?php else: ?>
-                                <input type="number" 
+                                <input type="text"
                                        id="stock_inicial" 
                                        name="stock_inicial" 
                                        class="form-control" 
+                                       data-solo-enteros
                                        min="0"
                                        value="<?php echo htmlspecialchars($datosProducto['stock_inicial'] ?? ''); ?>"
                                        required>
@@ -184,10 +189,11 @@ unset($_SESSION['datos_producto']);
                         
                         <div class="form-group">
                             <label for="stock_minimo">Stock mínimo *</label>
-                            <input type="number" 
+                            <input type="text"
                                    id="stock_minimo" 
                                    name="stock_minimo" 
                                    class="form-control" 
+                                   data-solo-enteros
                                    min="1"
                                    step="1"
                                    value="<?php echo htmlspecialchars($datosProducto['stock_minimo'] ?? ($producto['Stock_Minimo'] ?? '')); ?>"
@@ -196,6 +202,25 @@ unset($_SESSION['datos_producto']);
                             <small id="stock_minimo_error" class="form-text text-danger" role="alert" hidden></small>
                             <small class="form-text text-muted">Si la existencia es igual o menor, el producto se marca en rojo</small>
                         </div>
+
+                        <div class="form-group">
+                            <label for="stock_maximo">Stock máximo *</label>
+                            <input type="text"
+                                   id="stock_maximo"
+                                   name="stock_maximo"
+                                   class="form-control"
+                                   data-solo-enteros
+                                   min="1"
+                                   step="1"
+                                   value="<?php echo htmlspecialchars($datosProducto['stock_maximo'] ?? ($producto['Stock_Maximo'] ?? '')); ?>"
+                                   required
+                                   title="El stock máximo debe ser un número entero mayor o igual al stock mínimo.">
+                            <small id="stock_maximo_error" class="form-text text-danger" role="alert" hidden></small>
+                        </div>
+
+                        <?php if (!$esEdicion): ?>
+                            <small id="stock_inicial_error" class="form-text text-danger" role="alert" hidden></small>
+                        <?php endif; ?>
                     </div>
                     <div id="avisoPrecioMenorCosto" class="alert alert-warning py-2 mt-3 mb-0" role="status" hidden>
                         El precio de venta es menor que el costo

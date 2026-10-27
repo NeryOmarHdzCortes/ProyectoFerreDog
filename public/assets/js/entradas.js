@@ -172,18 +172,23 @@ document.addEventListener('DOMContentLoaded', function () {
         const textoCantidad = cantidadBuenEstado.value.trim();
         const cantidad = Number(textoCantidad);
         const cantidadPedida = Number(filaActiva.dataset.cantidadPedida);
-        const cantidadValida = /^[0-9]+$/.test(textoCantidad)
-            && Number.isInteger(cantidad)
-            && cantidad >= 0
-            && cantidad < cantidadPedida;
-        if (!cantidadValida) {
-            establecerError(
-                cantidadBuenEstado,
-                'La cantidad debe ser un entero entre 0 y ' + (cantidadPedida - 1)
-            );
+        if (textoCantidad === '') {
+            establecerError(cantidadBuenEstado, 'La cantidad es obligatoria');
             valido = false;
         } else {
-            establecerError(cantidadBuenEstado, '');
+            const cantidadValida = /^[0-9]+$/.test(textoCantidad)
+                && Number.isInteger(cantidad)
+                && cantidad >= 0
+                && cantidad < cantidadPedida;
+            if (!cantidadValida) {
+                establecerError(
+                    cantidadBuenEstado,
+                    'La cantidad debe ser un entero entre 0 y ' + (cantidadPedida - 1)
+                );
+                valido = false;
+            } else {
+                establecerError(cantidadBuenEstado, '');
+            }
         }
 
         const motivo = motivoIncidencia.value.trim();

@@ -96,6 +96,10 @@ window.onclick = function (event) {
 const formularioProducto = document.querySelector('.formulario-producto');
 const campoStockMinimo = document.getElementById('stock_minimo');
 const mensajeStockMinimo = document.getElementById('stock_minimo_error');
+const campoStockMaximo = document.getElementById('stock_maximo');
+const mensajeStockMaximo = document.getElementById('stock_maximo_error');
+const campoStockInicial = document.getElementById('stock_inicial');
+const mensajeStockInicial = document.getElementById('stock_inicial_error');
 const campoPrecioVenta = document.getElementById('precio_venta');
 const campoPrecioCompra = document.getElementById('precio_compra');
 const mensajePrecioCompra = document.getElementById('precio_compra_error');
@@ -155,31 +159,72 @@ if (campoPrecioVenta) {
 }
 actualizarAvisoPrecioMenorCosto();
 
-if (formularioProducto && campoStockMinimo && mensajeStockMinimo) {
+if (formularioProducto && campoStockMinimo && mensajeStockMinimo
+    && campoStockMaximo && mensajeStockMaximo) {
     const textoErrorStockMinimo = 'El stock mínimo debe ser un número entero mayor a 0.';
+    const textoErrorStockMaximo = 'El stock máximo debe ser un número entero mayor a 0.';
 
-    const validarStockMinimo = () => {
-        const valor = campoStockMinimo.value.trim();
-        const invalido = valor === '' || !Number.isInteger(Number(valor)) || Number(valor) < 1;
-
-        mensajeStockMinimo.textContent = invalido ? textoErrorStockMinimo : '';
-        mensajeStockMinimo.hidden = !invalido;
-        campoStockMinimo.setAttribute('aria-invalid', invalido ? 'true' : 'false');
-
-        return !invalido;
+    const mostrarError = (campo, mensajeElemento, mensaje) => {
+        mensajeElemento.textContent = mensaje;
+        mensajeElemento.hidden = mensaje === '';
+        campo.setAttribute('aria-invalid', mensaje === '' ? 'false' : 'true');
     };
 
-    campoStockMinimo.addEventListener('invalid', (event) => {
-        event.preventDefault();
-        validarStockMinimo();
+    const validarStocks = () => {
+        const valorMinimo = campoStockMinimo.value.trim();
+        const minimoValido = valorMinimo !== ''
+            && Number.isInteger(Number(valorMinimo))
+            && Number(valorMinimo) >= 1;
+        let mensajeMinimo = minimoValido ? '' : textoErrorStockMinimo;
+
+        const valorMaximo = campoStockMaximo.value.trim();
+        const maximoValido = valorMaximo !== ''
+            && Number.isInteger(Number(valorMaximo))
+            && Number(valorMaximo) >= 1;
+        let mensajeMaximo = maximoValido ? '' : textoErrorStockMaximo;
+
+        if (minimoValido && maximoValido && Number(valorMaximo) < Number(valorMinimo)) {
+            mensajeMaximo = 'El stock máximo debe ser mayor o igual al stock mínimo';
+        }
+
+        mostrarError(campoStockMinimo, mensajeStockMinimo, mensajeMinimo);
+        mostrarError(campoStockMaximo, mensajeStockMaximo, mensajeMaximo);
+
+        let stockInicialValido = true;
+        if (campoStockInicial && mensajeStockInicial) {
+            const valorInicial = campoStockInicial.value.trim();
+            stockInicialValido = valorInicial !== ''
+                && Number.isInteger(Number(valorInicial))
+                && Number(valorInicial) >= 0;
+            let mensajeInicial = stockInicialValido
+                ? ''
+                : 'El stock inicial debe ser un número entero igual o mayor a 0.';
+            if (stockInicialValido && maximoValido && Number(valorInicial) > Number(valorMaximo)) {
+                mensajeInicial = 'El stock inicial no puede ser mayor al stock máximo';
+                stockInicialValido = false;
+            }
+            mostrarError(campoStockInicial, mensajeStockInicial, mensajeInicial);
+        }
+
+        return minimoValido && maximoValido && mensajeMaximo === '' && stockInicialValido;
+    };
+
+    [campoStockMinimo, campoStockMaximo, campoStockInicial].filter(Boolean).forEach((campo) => {
+        campo.addEventListener('invalid', (event) => {
+            event.preventDefault();
+            validarStocks();
+        });
+        campo.addEventListener('input', validarStocks);
     });
 
-    campoStockMinimo.addEventListener('input', validarStockMinimo);
-
     formularioProducto.addEventListener('submit', (event) => {
-        if (!validarStockMinimo()) {
+        if (!validarStocks()) {
             event.preventDefault();
-            campoStockMinimo.focus();
+            const campoInvalido = [campoStockMinimo, campoStockMaximo, campoStockInicial]
+                .find((campo) => campo && campo.getAttribute('aria-invalid') === 'true');
+            if (campoInvalido) {
+                campoInvalido.focus();
+            }
         }
     });
 }

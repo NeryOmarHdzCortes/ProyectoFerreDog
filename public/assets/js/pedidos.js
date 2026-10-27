@@ -61,6 +61,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function validarLimiteCantidad(campoCantidad) {
+        const fila = campoCantidad.closest('tr[data-producto-id]');
+        if (!fila || campoCantidad.disabled) {
+            return true;
+        }
+
+        const cantidadTexto = campoCantidad.value.trim();
+        const cantidadMaxima = Number(fila.dataset.puedePedirHasta);
+        const cantidadValida = /^[0-9]+$/.test(cantidadTexto) && Number(cantidadTexto) > 0;
+        if (cantidadValida && Number(cantidadTexto) > cantidadMaxima) {
+            marcarError(
+                campoCantidad,
+                'Supera el stock máximo (puedes pedir hasta ' + cantidadMaxima + ')'
+            );
+            return false;
+        }
+
+        if (!validacionIniciada) {
+            marcarError(campoCantidad, '');
+        }
+        return true;
+    }
+
     function crearCampo(nombre, tipo, valor, min, step, etiqueta) {
         const grupo = document.createElement('div');
         const campo = document.createElement('input');
@@ -70,7 +93,8 @@ document.addEventListener('DOMContentLoaded', function () {
         campo.name = nombre;
         campo.value = valor;
         campo.className = 'form-control';
-        campo.inputMode = 'numeric';
+        campo.setAttribute('data-solo-enteros', '');
+        window.configurarSoloNumeros(campo);
         campo.setAttribute('aria-label', etiqueta);
         if (min !== null) {
             campo.min = min;
@@ -106,10 +130,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         fila.appendChild(celdaStock);
 
+        const stockMaximo = Number(producto.Stock_Maximo) || 0;
+        const puedePedirHasta = stockMaximo - existencias;
+        fila.dataset.puedePedirHasta = String(puedePedirHasta);
+        fila.appendChild(crearCelda(String(stockMaximo)));
+
         const idProducto = Number(producto.Id_Producto);
-        const cantidadInicial = datosAnteriores && datosAnteriores.cantidad !== undefined
+        let cantidadInicial = datosAnteriores && datosAnteriores.cantidad !== undefined
             ? String(datosAnteriores.cantidad)
             : '';
+        if (puedePedirHasta <= 0) {
+            cantidadInicial = '';
+        }
         const precioCompra = Number(producto.Precio_Compra);
         const tieneCosto = Number.isFinite(precioCompra) && precioCompra > 0;
         const cantidad = crearCampo(
@@ -120,13 +152,18 @@ document.addEventListener('DOMContentLoaded', function () {
             '1',
             'Cantidad de ' + producto.Nombre
         );
-        cantidad.campo.disabled = !tieneCosto;
+        cantidad.campo.disabled = !tieneCosto || puedePedirHasta <= 0;
         if (!tieneCosto) {
             cantidad.campo.value = '';
         }
         const celdaCosto = document.createElement('td');
         const celdaCantidad = document.createElement('td');
         const celdaSubtotal = document.createElement('td');
+        const avisoMaximo = document.createElement('small');
+        avisoMaximo.className = 'text-muted d-block mt-1';
+        avisoMaximo.textContent = puedePedirHasta <= 0
+            ? 'Ya está en su stock máximo'
+            : 'Puedes pedir hasta ' + puedePedirHasta;
         const salidaSubtotal = document.createElement('span');
         salidaSubtotal.dataset.subtotal = 'true';
         salidaSubtotal.textContent = '—';
@@ -144,6 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
             celdaCantidad.appendChild(avisoCantidad);
         }
         celdaCantidad.appendChild(cantidad.grupo);
+        celdaCantidad.appendChild(avisoMaximo);
         celdaSubtotal.appendChild(salidaSubtotal);
         fila.appendChild(celdaCosto);
         fila.appendChild(celdaCantidad);
@@ -156,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tablaProductos.replaceChildren();
         const fila = document.createElement('tr');
         const celda = document.createElement('td');
-        celda.colSpan = 6;
+        celda.colSpan = 7;
         celda.className = 'text-center';
         celda.textContent = mensaje;
         fila.appendChild(celda);
@@ -177,18 +215,32 @@ document.addEventListener('DOMContentLoaded', function () {
         tablaProductos.querySelectorAll('tr[data-producto-id]').forEach(function (fila) {
             const campoCantidad = fila.querySelector('[name$="[cantidad]"]');
             const salidaSubtotal = fila.querySelector('[data-subtotal]');
+            const maximoPedido = Number(fila.dataset.puedePedirHasta);
             const cantidadTexto = campoCantidad.value.trim();
 
             marcarError(campoCantidad, '');
             if (cantidadTexto === '') {
+                marcarError(campoCantidad, 'La cantidad es obligatoria');
                 salidaSubtotal.textContent = '—';
+                valido = false;
                 return;
             }
 
             cantidadProductos++;
             const cantidadValida = /^[0-9]+$/.test(cantidadTexto) && Number(cantidadTexto) > 0;
             if (!cantidadValida) {
-                marcarError(campoCantidad, 'La cantidad debe ser mayor a 0');
+                marcarError(
+                    campoCantidad,
+                    /^[0-9]+$/.test(cantidadTexto)
+                        ? 'La cantidad debe ser mayor a 0'
+                        : 'La cantidad debe ser un número entero'
+                );
+                valido = false;
+            } else if (Number(cantidadTexto) > maximoPedido) {
+                marcarError(
+                    campoCantidad,
+                    'Supera el stock máximo (puedes pedir hasta ' + maximoPedido + ')'
+                );
                 valido = false;
             }
 
@@ -265,6 +317,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fila.dataset.productoId = id;
                 tablaProductos.appendChild(fila);
             });
+            tablaProductos.querySelectorAll('[name$="[cantidad]"]').forEach(validarLimiteCantidad);
             if (validacionIniciada) {
                 validarFormulario();
             } else {
@@ -305,6 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     formulario.addEventListener('input', function (evento) {
         if (evento.target.matches('[name$="[cantidad]"]')) {
+            validarLimiteCantidad(evento.target);
             if (validacionIniciada) {
                 validarFormulario();
             } else {

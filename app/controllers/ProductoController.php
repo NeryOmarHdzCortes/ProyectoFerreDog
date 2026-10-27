@@ -18,7 +18,6 @@ class ProductoController {
 
     private const URL_LISTA = '/ProyectoFerredog/public/index.php?c=producto&a=lista';
     private const PRODUCTOS_POR_PAGINA = 10;
-    private const STOCK_MAXIMO_PREDETERMINADO = 100;
 
     public function __construct() {
         global $pdo;
@@ -181,6 +180,7 @@ class ProductoController {
         $idProveedor = $this->obtenerEntero($_POST['proveedor'] ?? null);
         $idUnidad = $this->obtenerEntero($_POST['unidad'] ?? null);
         $stockMinimo = $this->obtenerEntero($_POST['stock_minimo'] ?? null);
+        $stockMaximo = $this->obtenerEntero($_POST['stock_maximo'] ?? null);
         $stockInicial = $idProducto === 0
             ? $this->obtenerEntero($_POST['stock_inicial'] ?? null)
             : null;
@@ -216,17 +216,20 @@ class ProductoController {
 
         if ($stockMinimo === null || $stockMinimo < 1) {
             $errores[] = 'El stock mínimo debe ser un número entero mayor a 0.';
-        } else {
-            $stockMaximo = $productoActual
-                ? (int) $productoActual['Stock_Maximo']
-                : self::STOCK_MAXIMO_PREDETERMINADO;
-            if ($stockMinimo > $stockMaximo) {
-                $errores[] = 'El stock mínimo no puede ser mayor al stock máximo (' . $stockMaximo . ').';
-            }
+        }
+
+        if ($stockMaximo === null || $stockMaximo < 1) {
+            $errores[] = 'El stock máximo debe ser un número entero mayor a 0.';
+        } elseif ($stockMinimo !== null && $stockMaximo < $stockMinimo) {
+            $errores[] = 'El stock máximo debe ser mayor o igual al stock mínimo';
         }
 
         if ($idProducto === 0 && ($stockInicial === null || $stockInicial < 0)) {
             $errores[] = 'El stock inicial debe ser un número entero igual o mayor a 0.';
+        }
+        if ($idProducto === 0 && $stockInicial !== null && $stockMaximo !== null
+            && $stockInicial > $stockMaximo) {
+            $errores[] = 'El stock inicial no puede ser mayor al stock máximo';
         }
 
         $precioVenta = null;
@@ -272,7 +275,8 @@ class ProductoController {
                     $precioVenta,
                     $stockInicial,
                     $stockMinimo,
-                    $precioCompra
+                    $precioCompra,
+                    $stockMaximo
                 );
                 $this->pdo->commit();
                 $_SESSION['mensaje_exito'] = 'Producto creado correctamente.';
@@ -287,7 +291,8 @@ class ProductoController {
                     $idUnidad,
                     $precioVenta,
                     $stockMinimo,
-                    $precioCompra
+                    $precioCompra,
+                    $stockMaximo
                 );
                 $_SESSION['mensaje_exito'] = 'Producto actualizado correctamente.';
             }
@@ -450,7 +455,7 @@ class ProductoController {
     private function redirigirConErrores($errores, $idProducto) {
         $_SESSION['errores'] = $errores;
         $_SESSION['datos_producto'] = [];
-        foreach (['codigo', 'nombre', 'marca', 'categoria', 'proveedor', 'unidad', 'precio_venta', 'precio_compra', 'stock_inicial', 'stock_minimo'] as $campo) {
+        foreach (['codigo', 'nombre', 'marca', 'categoria', 'proveedor', 'unidad', 'precio_venta', 'precio_compra', 'stock_inicial', 'stock_minimo', 'stock_maximo'] as $campo) {
             if (isset($_POST[$campo]) && is_scalar($_POST[$campo])) {
                 $_SESSION['datos_producto'][$campo] = (string) $_POST[$campo];
             }

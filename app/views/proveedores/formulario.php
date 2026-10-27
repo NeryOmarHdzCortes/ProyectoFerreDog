@@ -119,11 +119,12 @@ $busquedaProductos = $busquedaProductos ?? '';
                     <div class="form-group">
                         <label for="telefonoProveedor">Teléfono *</label>
                         <input
-                            type="tel"
+                            type="text"
                             id="telefonoProveedor"
                             name="telefono"
                             class="form-control<?php echo isset($erroresCampo['telefono']) ? ' is-invalid' : ''; ?>"
                             value="<?php echo htmlspecialchars($datosFormulario['telefono'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                            data-solo-enteros
                             inputmode="numeric"
                             maxlength="10"
                             pattern="[0-9]{10}"

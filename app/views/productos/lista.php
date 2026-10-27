@@ -92,6 +92,7 @@
                                 <th>PRECIO</th>
                                 <th>STOCK</th>
                                 <th>MÍN.</th>
+                                <th>MÁX.</th>
                                 <?php if ($_SESSION['Rol'] !== 'Vendedor'): ?>
                                     <th>ACCIONES</th>
                                 <?php endif; ?>
@@ -100,7 +101,7 @@
                         <tbody>
                             <?php if (empty($productos)): ?>
                                 <tr>
-                                    <td colspan="<?php echo $_SESSION['Rol'] === 'Vendedor' ? '8' : '9'; ?>" class="text-center">
+                                    <td colspan="<?php echo $_SESSION['Rol'] === 'Vendedor' ? '9' : '10'; ?>" class="text-center">
                                         No se encontraron productos
                                     </td>
                                 </tr>
@@ -137,6 +138,7 @@
                                             <?php echo $producto['Existencias'] ?? 0; ?>
                                         </td>
                                         <td><?php echo $producto['Stock_Minimo'] ?? 0; ?></td>
+                                        <td><?php echo $producto['Stock_Maximo'] ?? 0; ?></td>
                                         
                                         <?php if ($_SESSION['Rol'] !== 'Vendedor'): ?>
                                             <td>
@@ -250,9 +252,10 @@
                         <p id="modalPrecioNombre"></p>
                         <div class="form-group">
                             <label>Precio de venta *</label>
-                            <input type="number" 
+                            <input type="text"
                                    id="inputPrecioVenta" 
                                    class="form-control" 
+                                   data-solo-decimales
                                    step="0.01" 
                                    min="0.01"
                                    required

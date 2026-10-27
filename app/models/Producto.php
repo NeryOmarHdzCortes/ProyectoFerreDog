@@ -186,12 +186,13 @@ class Producto {
      * Crear producto (transacción: productos + inventario)
      */
     public function crear($codigoBarras, $nombre, $idMarca, $idCategoria, $idProveedor, 
-                         $idUnidad, $precioVenta, $stockInicial, $stockMinimo, $precioCompra = null) {
+                         $idUnidad, $precioVenta, $stockInicial, $stockMinimo, $precioCompra = null,
+                         $stockMaximo = 100) {
         // 1. Insertar en productos
-        $sql = "INSERT INTO productos (Codigo_Barras, Nombre, Precio_Venta, Precio_Compra, Stock_Minimo,
+        $sql = "INSERT INTO productos (Codigo_Barras, Nombre, Precio_Venta, Precio_Compra, Stock_Minimo, Stock_Maximo,
                                        Fecha_Registro, Estado, Id_Categoria, 
                                        Id_Unidad, Id_Proveedor, Id_Marca)
-                VALUES (:codigo, :nombre, :precio, :precio_compra, :stock_min, NOW(), 1,
+                VALUES (:codigo, :nombre, :precio, :precio_compra, :stock_min, :stock_max, NOW(), 1,
                         :categoria, :unidad, :proveedor, :marca)";
         
         $stmt = $this->pdo->prepare($sql);
@@ -201,6 +202,7 @@ class Producto {
             'precio' => $precioVenta, // NULL si no se proporciona
             'precio_compra' => $precioCompra,
             'stock_min' => $stockMinimo,
+            'stock_max' => $stockMaximo,
             'categoria' => $idCategoria,
             'unidad' => $idUnidad,
             'proveedor' => $idProveedor,
@@ -221,16 +223,18 @@ class Producto {
     }
     
     /**
-     * Editar producto (actualiza productos y stock mínimo)
+     * Editar producto (actualiza productos y límites de inventario)
      */
     public function editar($idProducto, $codigoBarras, $nombre, $idMarca, $idCategoria, 
-                          $idProveedor, $idUnidad, $precioVenta, $stockMinimo, $precioCompra = null) {
+                          $idProveedor, $idUnidad, $precioVenta, $stockMinimo, $precioCompra = null,
+                          $stockMaximo = 100) {
         $sql = "UPDATE productos 
                 SET Codigo_Barras = :codigo,
                     Nombre = :nombre,
                     Precio_Venta = :precio,
                     Precio_Compra = :precio_compra,
                     Stock_Minimo = :stock_min,
+                    Stock_Maximo = :stock_max,
                     Id_Marca = :marca,
                     Id_Categoria = :categoria,
                     Id_Proveedor = :proveedor,
@@ -244,6 +248,7 @@ class Producto {
             'precio' => $precioVenta,
             'precio_compra' => $precioCompra,
             'stock_min' => $stockMinimo,
+            'stock_max' => $stockMaximo,
             'marca' => $idMarca,
             'categoria' => $idCategoria,
             'proveedor' => $idProveedor,

@@ -165,9 +165,10 @@
                             <div class="mb-3">
                                 <label for="cantidadBuenEstado" class="form-label">Cantidad recibida en buen estado *</label>
                                 <input
-                                    type="number"
+                                    type="text"
                                     id="cantidadBuenEstado"
                                     class="form-control"
+                                    data-solo-enteros
                                     min="0"
                                     step="1"
                                     required
