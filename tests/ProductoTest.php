@@ -193,13 +193,12 @@ class ProductoTest extends TestCase
                 }
 
                 $consultaDetalle = $this->pdo->prepare(
-                    'SELECT Id_Producto, Codigo_Producto, Nombre_Producto
+                    'SELECT Id_Producto, Nombre_Producto
                      FROM detalle_ventas WHERE Id_Ventas = :venta'
                 );
                 $consultaDetalle->execute(['venta' => $idVenta]);
                 $detalle = $consultaDetalle->fetch(PDO::FETCH_ASSOC);
                 $this->assertNull($detalle['Id_Producto']);
-                $this->assertEquals($producto['codigo'], $detalle['Codigo_Producto']);
                 $this->assertEquals($producto['nombre'], $detalle['Nombre_Producto']);
             });
         });

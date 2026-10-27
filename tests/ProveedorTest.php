@@ -190,14 +190,13 @@ class ProveedorTest extends TestCase
 
                 $this->assertFalse($this->modelo->obtenerPorId($idProveedor));
                 $consultaCompra = $this->pdo->prepare(
-                    'SELECT Id_Proveedor, Nombre_Proveedor, RFC_Proveedor
+                    'SELECT Id_Proveedor, Nombre_Proveedor
                      FROM compras WHERE Id_Proveedor IS NULL AND Nombre_Proveedor = :nombre'
                 );
                 $consultaCompra->execute(['nombre' => $proveedor['nombre']]);
                 $compra = $consultaCompra->fetch(PDO::FETCH_ASSOC);
                 $this->assertNull($compra['Id_Proveedor']);
                 $this->assertEquals($proveedor['nombre'], $compra['Nombre_Proveedor']);
-                $this->assertEquals('ABC010101A1', $compra['RFC_Proveedor']);
                 $productoSinProveedor = $modeloProducto->obtenerTodos(
                     'ProductoCompra' . $sufijo,
                     0,

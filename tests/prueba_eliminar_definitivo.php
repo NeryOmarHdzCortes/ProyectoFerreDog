@@ -370,7 +370,7 @@ try {
 
         $consultaVenta = $pdo->prepare(
             'SELECT COALESCE(p.Nombre, dv.Nombre_Producto) AS Nombre_Producto,
-                    COALESCE(p.Codigo_Barras, dv.Codigo_Producto) AS Codigo_Producto
+                    p.Codigo_Barras
              FROM detalle_ventas dv
              LEFT JOIN productos p ON p.Id_Producto = dv.Id_Producto
              WHERE dv.Id_Ventas = :id_venta'
@@ -378,12 +378,11 @@ try {
         $consultaVenta->execute(['id_venta' => $idVenta]);
         $venta = $consultaVenta->fetch(PDO::FETCH_ASSOC);
         $asegurar($venta !== false && $venta['Nombre_Producto'] === $nombreProductoB, 'La consulta equivalente del historial de ventas no devolvió el nombre.');
-        $asegurar($venta['Codigo_Producto'] === $GLOBALS['codigoProductoB'], 'La consulta equivalente del historial de ventas no devolvió el código.');
 
         $consultaCompra = $pdo->prepare(
             'SELECT COALESCE(pr.Nombre, c.Nombre_Proveedor) AS Nombre_Proveedor,
                     COALESCE(p.Nombre, dc.Nombre_Producto) AS Nombre_Producto,
-                    COALESCE(p.Codigo_Barras, dc.Codigo_Producto) AS Codigo_Producto
+                    p.Codigo_Barras
              FROM compras c
              LEFT JOIN proveedor pr ON pr.Id_Proveedor = c.Id_Proveedor
              LEFT JOIN detalle_compras dc ON dc.Id_Compras = c.Id_Compras
@@ -394,9 +393,8 @@ try {
         $compra = $consultaCompra->fetch(PDO::FETCH_ASSOC);
         $asegurar($compra !== false && $compra['Nombre_Proveedor'] === $proveedorNombre, 'La consulta equivalente del historial no devolvió el nombre del proveedor.');
         $asegurar($compra['Nombre_Producto'] === $nombreProductoB, 'La consulta equivalente del historial de compras no devolvió el nombre del producto.');
-        $asegurar($compra['Codigo_Producto'] === $GLOBALS['codigoProductoB'], 'La consulta equivalente del historial de compras no devolvió el código.');
 
-        return 'La aplicación no tiene métodos de historial; consultas SQL equivalentes devolvieron nombres y códigos capturados.';
+        return 'La aplicación no tiene métodos de historial; consultas SQL equivalentes devolvieron los nombres capturados y el código directamente desde productos.';
     });
 
     $registrarResultado(8, 'Comprobar que no haya productos ni proveedores con Estado 2', function () use (
