@@ -1,9 +1,9 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (x86_64)
+-- MariaDB dump 10.19-12.0.2-MariaDB, for Win64 (AMD64)
 --
 -- Host: localhost    Database: ferredog
 -- ------------------------------------------------------
--- Server version	10.11.14-MariaDB-0ubuntu0.24.04.1
+-- Server version	12.0.2-MariaDB-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -14,7 +14,7 @@
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+/*M!100616 SET @OLD_NOTE_VERBOSITY=@@NOTE_VERBOSITY, NOTE_VERBOSITY=0 */;
 
 --
 -- Table structure for table `categoria`
@@ -40,6 +40,7 @@ CREATE TABLE `categoria` (
 
 LOCK TABLES `categoria` WRITE;
 /*!40000 ALTER TABLE `categoria` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `categoria` VALUES
 (1,'Herramientas Manuales','Martillos, desarmadores, llaves y pinzas','2025-02-10',1),
 (2,'Herramientas Eléctricas','Taladros, rotomartillos, sierras eléctricas','2025-01-08',1),
@@ -58,6 +59,7 @@ INSERT INTO `categoria` VALUES
 (15,'Limpieza y Mantenimiento','Productos de limpieza industrial','2025-01-06',1);
 /*!40000 ALTER TABLE `categoria` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `cliente`
@@ -85,6 +87,7 @@ CREATE TABLE `cliente` (
 
 LOCK TABLES `cliente` WRITE;
 /*!40000 ALTER TABLE `cliente` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `cliente` VALUES
 (1,'Norma','Rodríguez Salazar','9514475523','norma661@gmail.com','Calle Zaragoza #231, Col. Centro, Oaxaca de Juárez, Oax.','2026-08-02',1),
 (2,'Martha','Castillo Villanueva','9518062546',NULL,'Av. Revolución #126, Col. Centro, Oaxaca de Juárez, Oax.','2025-02-23',1),
@@ -208,6 +211,7 @@ INSERT INTO `cliente` VALUES
 (120,'Diana','Rojas Chávez','9518033593','diana90@gmail.com','Calle Morelos #668, Col. Centro, Oaxaca de Juárez, Oax.','2025-10-14',1);
 /*!40000 ALTER TABLE `cliente` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `compras`
@@ -221,6 +225,9 @@ CREATE TABLE `compras` (
   `Fecha_Compra` date DEFAULT curdate(),
   `Total` decimal(10,2) NOT NULL,
   `Estado` enum('Pendiente','Recibida','Cancelada') DEFAULT 'Pendiente',
+  `Fecha_Recepcion` datetime DEFAULT NULL,
+  `Id_Empleado_Recibe` int(11) DEFAULT NULL,
+  `Motivo_Cancelacion` varchar(200) DEFAULT NULL,
   `Id_Proveedor` int(11) DEFAULT NULL,
   `Nombre_Proveedor` varchar(100) DEFAULT NULL,
   `RFC_Proveedor` varchar(20) DEFAULT NULL,
@@ -229,10 +236,12 @@ CREATE TABLE `compras` (
   KEY `Id_Proveedor` (`Id_Proveedor`),
   KEY `Id_Empleado` (`Id_Empleado`),
   KEY `idx_compras_fecha` (`Fecha_Compra`),
+  KEY `fk_compras_empleado_recibe` (`Id_Empleado_Recibe`),
   CONSTRAINT `compras_ibfk_1` FOREIGN KEY (`Id_Proveedor`) REFERENCES `proveedor` (`Id_Proveedor`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `compras_ibfk_2` FOREIGN KEY (`Id_Empleado`) REFERENCES `empleados` (`Id_Empleado`) ON UPDATE CASCADE,
+  CONSTRAINT `fk_compras_empleado_recibe` FOREIGN KEY (`Id_Empleado_Recibe`) REFERENCES `empleados` (`Id_Empleado`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `CONSTRAINT_1` CHECK (`Total` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=122 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=305 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -241,129 +250,132 @@ CREATE TABLE `compras` (
 
 LOCK TABLES `compras` WRITE;
 /*!40000 ALTER TABLE `compras` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `compras` VALUES
-(1,'2026-09-02',70439.68,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',3),
-(2,'2025-07-08',23993.97,'Recibida',13,'Grupo Adhesivos Mexicanos','IOZ558845',10),
-(3,'2026-08-21',61163.96,'Recibida',8,'Comercializadora Cerrajera','USB441483',20),
-(4,'2025-10-18',170009.47,'Recibida',26,'Suministros de Limpieza Profesional','ECD287163',4),
-(5,'2025-03-09',136617.70,'Recibida',13,'Grupo Adhesivos Mexicanos','IOZ558845',4),
-(6,'2025-11-05',85437.00,'Recibida',13,'Grupo Adhesivos Mexicanos','IOZ558845',19),
-(7,'2025-08-29',288271.77,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',3),
-(8,'2026-07-10',175826.44,'Recibida',25,'Aceros Oaxaca S.A. de C.V.','XKT598376',9),
-(9,'2025-06-02',121534.24,'Recibida',26,'Suministros de Limpieza Profesional','ECD287163',13),
-(10,'2025-04-22',355550.64,'Cancelada',2,'Distribuidora Ferretera Oaxaca','BZN799162',7),
-(11,'2026-02-20',162456.25,'Recibida',8,'Comercializadora Cerrajera','USB441483',9),
-(12,'2026-07-24',129694.01,'Recibida',2,'Distribuidora Ferretera Oaxaca','BZN799162',8),
-(13,'2026-09-15',132656.56,'Recibida',24,'Proveedora Industrial Monte Albán','IHR961520',17),
-(14,'2025-10-28',71375.10,'Recibida',21,'Distribuidora Nacional de Tornillos','VGV000872',14),
-(15,'2025-01-17',85606.47,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',10),
-(16,'2026-09-15',1397.37,'Recibida',8,'Comercializadora Cerrajera','USB441483',18),
-(17,'2026-02-23',12531.75,'Recibida',21,'Distribuidora Nacional de Tornillos','VGV000872',5),
-(18,'2026-05-24',225531.70,'Recibida',9,'Suministros Industriales Pérez','BVH390137',13),
-(19,'2025-08-27',38438.14,'Recibida',10,'Importadora de Herramientas Nacional','EXE121677',10),
-(20,'2026-05-18',623236.74,'Recibida',20,'Tuberías y Conexiones Hidráulicas','BJF343962',16),
-(21,'2025-08-31',197323.14,'Recibida',14,'Ferretería Mayorista del Pacífico','AON591949',5),
-(22,'2025-02-14',12732.16,'Pendiente',11,'Cementos y Agregados del Valle','DJL266101',20),
-(23,'2025-12-01',54914.02,'Recibida',4,'Grupo Eléctrico Industrial','CGF509217',17),
-(24,'2025-10-13',303052.80,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',16),
-(25,'2025-06-01',228188.62,'Recibida',8,'Comercializadora Cerrajera','USB441483',11),
-(26,'2025-12-25',20238.70,'Cancelada',7,'Herramientas Profesionales GH','FOY172918',6),
-(27,'2025-09-09',90002.88,'Recibida',22,'Pinturas Vinci de México','ZRM118269',16),
-(28,'2025-03-31',72636.20,'Recibida',5,'Plomería Total S.A.','WWY393131',10),
-(29,'2025-01-23',56567.60,'Recibida',5,'Plomería Total S.A.','WWY393131',8),
-(30,'2025-09-01',361760.45,'Recibida',11,'Cementos y Agregados del Valle','DJL266101',16),
-(31,'2026-02-10',130362.75,'Recibida',19,'Materiales Eléctricos del Sureste','TWV513518',12),
-(32,'2026-01-11',65360.87,'Cancelada',3,'Pinturas y Recubrimientos MX','EPU690795',8),
-(33,'2025-03-24',121175.01,'Recibida',28,'Comercial Herramientas Total','IZX918103',6),
-(34,'2026-02-03',161538.24,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',10),
-(35,'2025-10-06',351851.85,'Recibida',13,'Grupo Adhesivos Mexicanos','IOZ558845',1),
-(36,'2025-07-12',75979.12,'Recibida',9,'Suministros Industriales Pérez','BVH390137',17),
-(37,'2025-11-02',40925.60,'Cancelada',16,'Abrasivos y Discos MX','UCD559117',20),
-(38,'2026-02-04',136647.24,'Recibida',9,'Suministros Industriales Pérez','BVH390137',2),
-(39,'2025-11-13',12898.80,'Recibida',10,'Importadora de Herramientas Nacional','EXE121677',2),
-(40,'2025-07-14',223686.00,'Recibida',20,'Tuberías y Conexiones Hidráulicas','BJF343962',2),
-(41,'2026-08-19',375672.17,'Recibida',5,'Plomería Total S.A.','WWY393131',14),
-(42,'2026-06-10',76413.14,'Pendiente',30,'Maderas y Construcción del Sur','ERQ263135',6),
-(43,'2025-12-05',187543.62,'Recibida',26,'Suministros de Limpieza Profesional','ECD287163',11),
-(44,'2025-06-06',479726.00,'Pendiente',11,'Cementos y Agregados del Valle','DJL266101',5),
-(45,'2026-03-01',56107.80,'Recibida',7,'Herramientas Profesionales GH','FOY172918',18),
-(46,'2026-08-14',18744.32,'Recibida',2,'Distribuidora Ferretera Oaxaca','BZN799162',14),
-(47,'2026-07-27',205479.23,'Recibida',9,'Suministros Industriales Pérez','BVH390137',4),
-(48,'2025-12-31',175209.88,'Recibida',20,'Tuberías y Conexiones Hidráulicas','BJF343962',14),
-(49,'2025-05-05',310155.60,'Recibida',19,'Materiales Eléctricos del Sureste','TWV513518',5),
-(50,'2026-08-06',16934.25,'Cancelada',17,'Jardín y Vivero Suministros','MEK664386',14),
-(51,'2026-06-19',210298.13,'Pendiente',16,'Abrasivos y Discos MX','UCD559117',6),
-(52,'2026-02-11',381672.98,'Recibida',7,'Herramientas Profesionales GH','FOY172918',10),
-(53,'2025-12-10',131002.99,'Recibida',13,'Grupo Adhesivos Mexicanos','IOZ558845',6),
-(54,'2025-12-09',129262.32,'Recibida',11,'Cementos y Agregados del Valle','DJL266101',4),
-(55,'2025-05-18',286958.32,'Cancelada',25,'Aceros Oaxaca S.A. de C.V.','XKT598376',5),
-(56,'2025-07-27',203043.39,'Pendiente',25,'Aceros Oaxaca S.A. de C.V.','XKT598376',16),
-(57,'2026-03-02',115003.24,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',1),
-(58,'2026-04-27',193918.40,'Recibida',16,'Abrasivos y Discos MX','UCD559117',19),
-(59,'2026-03-05',163784.60,'Recibida',10,'Importadora de Herramientas Nacional','EXE121677',3),
-(60,'2026-02-07',285298.49,'Cancelada',4,'Grupo Eléctrico Industrial','CGF509217',14),
-(61,'2026-01-10',141926.50,'Recibida',23,'Herrajes y Candados Continental','MRV315683',10),
-(62,'2025-05-15',161898.28,'Recibida',16,'Abrasivos y Discos MX','UCD559117',15),
-(63,'2026-09-22',60083.01,'Recibida',17,'Jardín y Vivero Suministros','MEK664386',14),
-(64,'2026-06-03',21997.82,'Cancelada',10,'Importadora de Herramientas Nacional','EXE121677',5),
-(65,'2025-05-05',289707.17,'Recibida',22,'Pinturas Vinci de México','ZRM118269',19),
-(66,'2025-04-19',35112.87,'Recibida',29,'Distribuidora de Cables y Contactos','ETM706649',20),
-(67,'2026-06-12',101737.25,'Cancelada',21,'Distribuidora Nacional de Tornillos','VGV000872',7),
-(68,'2025-08-21',116348.07,'Recibida',21,'Distribuidora Nacional de Tornillos','VGV000872',4),
-(69,'2025-03-12',166054.92,'Recibida',18,'Grupo Constructor Zapoteca','VWR923773',13),
-(70,'2025-08-05',111557.70,'Recibida',1,'Tornillos y Fijaciones del Sur','ZOA374735',5),
-(71,'2025-02-11',384534.32,'Recibida',10,'Importadora de Herramientas Nacional','EXE121677',5),
-(72,'2025-07-28',295677.00,'Pendiente',11,'Cementos y Agregados del Valle','DJL266101',14),
-(73,'2026-01-19',138058.56,'Recibida',20,'Tuberías y Conexiones Hidráulicas','BJF343962',13),
-(74,'2026-02-07',46659.90,'Cancelada',30,'Maderas y Construcción del Sur','ERQ263135',9),
-(75,'2026-09-19',243550.56,'Recibida',27,'Grupo Ferretero del Istmo','PMD065641',14),
-(76,'2025-05-17',135144.60,'Recibida',28,'Comercial Herramientas Total','IZX918103',17),
-(77,'2025-01-04',61764.09,'Recibida',7,'Herramientas Profesionales GH','FOY172918',4),
-(78,'2025-12-27',46119.25,'Recibida',4,'Grupo Eléctrico Industrial','CGF509217',7),
-(79,'2026-03-29',232223.60,'Recibida',2,'Distribuidora Ferretera Oaxaca','BZN799162',12),
-(80,'2025-11-16',268288.00,'Recibida',11,'Cementos y Agregados del Valle','DJL266101',19),
-(81,'2025-11-26',304440.47,'Recibida',1,'Tornillos y Fijaciones del Sur','ZOA374735',19),
-(82,'2026-03-13',93937.94,'Recibida',6,'Aceros y Materiales del Istmo','SYU251361',11),
-(83,'2026-09-07',22445.64,'Recibida',24,'Proveedora Industrial Monte Albán','IHR961520',7),
-(84,'2026-05-29',32481.60,'Cancelada',16,'Abrasivos y Discos MX','UCD559117',10),
-(85,'2026-08-23',234567.90,'Recibida',5,'Plomería Total S.A.','WWY393131',7),
-(86,'2025-05-14',26495.72,'Pendiente',29,'Distribuidora de Cables y Contactos','ETM706649',20),
-(87,'2025-08-26',188922.24,'Recibida',27,'Grupo Ferretero del Istmo','PMD065641',9),
-(88,'2025-06-23',23114.05,'Cancelada',24,'Proveedora Industrial Monte Albán','IHR961520',10),
-(89,'2025-12-02',84029.00,'Cancelada',6,'Aceros y Materiales del Istmo','SYU251361',6),
-(90,'2026-07-12',297218.85,'Recibida',5,'Plomería Total S.A.','WWY393131',10),
-(91,'2025-09-13',407043.56,'Recibida',21,'Distribuidora Nacional de Tornillos','VGV000872',13),
-(92,'2025-08-29',136095.19,'Cancelada',15,'Equipos de Seguridad Industrial SA','FVD537805',4),
-(93,'2025-08-07',31826.52,'Recibida',12,'Distribuidora de Iluminación LED','XGQ333104',15),
-(94,'2025-07-05',108237.30,'Recibida',7,'Herramientas Profesionales GH','FOY172918',12),
-(95,'2026-01-24',73189.81,'Recibida',19,'Materiales Eléctricos del Sureste','TWV513518',8),
-(96,'2025-04-17',302934.60,'Recibida',15,'Equipos de Seguridad Industrial SA','FVD537805',15),
-(97,'2025-10-22',1174.36,'Recibida',5,'Plomería Total S.A.','WWY393131',18),
-(98,'2025-05-22',256759.50,'Pendiente',27,'Grupo Ferretero del Istmo','PMD065641',7),
-(99,'2025-09-28',36458.88,'Recibida',16,'Abrasivos y Discos MX','UCD559117',5),
-(100,'2025-04-22',122726.87,'Recibida',20,'Tuberías y Conexiones Hidráulicas','BJF343962',7),
-(101,'2026-07-06',72187.16,'Recibida',20,'Tuberías y Conexiones Hidráulicas','BJF343962',16),
-(102,'2025-04-05',214685.68,'Recibida',30,'Maderas y Construcción del Sur','ERQ263135',7),
-(103,'2025-03-17',153907.98,'Recibida',15,'Equipos de Seguridad Industrial SA','FVD537805',1),
-(104,'2025-01-26',35112.87,'Recibida',23,'Herrajes y Candados Continental','MRV315683',7),
-(105,'2026-01-30',81278.26,'Recibida',16,'Abrasivos y Discos MX','UCD559117',16),
-(106,'2025-09-29',323375.23,'Recibida',14,'Ferretería Mayorista del Pacífico','AON591949',1),
-(107,'2026-02-13',216476.48,'Pendiente',16,'Abrasivos y Discos MX','UCD559117',14),
-(108,'2026-09-18',199275.55,'Recibida',21,'Distribuidora Nacional de Tornillos','VGV000872',15),
-(109,'2025-02-20',149559.01,'Recibida',30,'Maderas y Construcción del Sur','ERQ263135',3),
-(110,'2026-04-27',47659.50,'Recibida',8,'Comercializadora Cerrajera','USB441483',14),
-(111,'2026-02-17',87127.34,'Pendiente',25,'Aceros Oaxaca S.A. de C.V.','XKT598376',8),
-(112,'2025-06-20',142738.75,'Recibida',9,'Suministros Industriales Pérez','BVH390137',3),
-(113,'2025-12-26',46857.14,'Pendiente',7,'Herramientas Profesionales GH','FOY172918',17),
-(114,'2026-09-08',298036.19,'Recibida',16,'Abrasivos y Discos MX','UCD559117',14),
-(115,'2025-06-17',8055.60,'Pendiente',4,'Grupo Eléctrico Industrial','CGF509217',12),
-(116,'2025-05-12',95121.89,'Recibida',4,'Grupo Eléctrico Industrial','CGF509217',12),
-(117,'2025-08-15',62289.20,'Recibida',30,'Maderas y Construcción del Sur','ERQ263135',19),
-(118,'2026-08-23',112575.49,'Recibida',30,'Maderas y Construcción del Sur','ERQ263135',8),
-(119,'2026-07-25',126506.94,'Cancelada',20,'Tuberías y Conexiones Hidráulicas','BJF343962',15),
-(120,'2025-06-14',369693.40,'Recibida',29,'Distribuidora de Cables y Contactos','ETM706649',14);
+(1,'2026-09-02',70439.68,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',3),
+(2,'2025-07-08',23993.97,'Recibida',NULL,NULL,NULL,13,'Grupo Adhesivos Mexicanos','IOZ558845',10),
+(3,'2026-08-21',61163.96,'Recibida',NULL,NULL,NULL,8,'Comercializadora Cerrajera','USB441483',20),
+(4,'2025-10-18',170009.47,'Recibida',NULL,NULL,NULL,26,'Suministros de Limpieza Profesional','ECD287163',4),
+(5,'2025-03-09',136617.70,'Recibida',NULL,NULL,NULL,13,'Grupo Adhesivos Mexicanos','IOZ558845',4),
+(6,'2025-11-05',85437.00,'Recibida',NULL,NULL,NULL,13,'Grupo Adhesivos Mexicanos','IOZ558845',19),
+(7,'2025-08-29',288271.77,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',3),
+(8,'2026-07-10',175826.44,'Recibida',NULL,NULL,NULL,25,'Aceros Oaxaca S.A. de C.V.','XKT598376',9),
+(9,'2025-06-02',121534.24,'Recibida',NULL,NULL,NULL,26,'Suministros de Limpieza Profesional','ECD287163',13),
+(10,'2025-04-22',355550.64,'Cancelada',NULL,NULL,NULL,2,'Distribuidora Ferretera Oaxaca','BZN799162',7),
+(11,'2026-02-20',162456.25,'Recibida',NULL,NULL,NULL,8,'Comercializadora Cerrajera','USB441483',9),
+(12,'2026-07-24',129694.01,'Recibida',NULL,NULL,NULL,2,'Distribuidora Ferretera Oaxaca','BZN799162',8),
+(13,'2026-09-15',132656.56,'Recibida',NULL,NULL,NULL,24,'Proveedora Industrial Monte Albán','IHR961520',17),
+(14,'2025-10-28',71375.10,'Recibida',NULL,NULL,NULL,21,'Distribuidora Nacional de Tornillos','VGV000872',14),
+(15,'2025-01-17',85606.47,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',10),
+(16,'2026-09-15',1397.37,'Recibida',NULL,NULL,NULL,8,'Comercializadora Cerrajera','USB441483',18),
+(17,'2026-02-23',12531.75,'Recibida',NULL,NULL,NULL,21,'Distribuidora Nacional de Tornillos','VGV000872',5),
+(18,'2026-05-24',225531.70,'Recibida',NULL,NULL,NULL,9,'Suministros Industriales Pérez','BVH390137',13),
+(19,'2025-08-27',38438.14,'Recibida',NULL,NULL,NULL,10,'Importadora de Herramientas Nacional','EXE121677',10),
+(20,'2026-05-18',623236.74,'Recibida',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',16),
+(21,'2025-08-31',197323.14,'Recibida',NULL,NULL,NULL,14,'Ferretería Mayorista del Pacífico','AON591949',5),
+(22,'2025-02-14',12732.16,'Pendiente',NULL,NULL,NULL,11,'Cementos y Agregados del Valle','DJL266101',20),
+(23,'2025-12-01',54914.02,'Recibida',NULL,NULL,NULL,4,'Grupo Eléctrico Industrial','CGF509217',17),
+(24,'2025-10-13',303052.80,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',16),
+(25,'2025-06-01',228188.62,'Recibida',NULL,NULL,NULL,8,'Comercializadora Cerrajera','USB441483',11),
+(26,'2025-12-25',20238.70,'Cancelada',NULL,NULL,NULL,7,'Herramientas Profesionales GH','FOY172918',6),
+(27,'2025-09-09',90002.88,'Recibida',NULL,NULL,NULL,22,'Pinturas Vinci de México','ZRM118269',16),
+(28,'2025-03-31',72636.20,'Recibida',NULL,NULL,NULL,5,'Plomería Total S.A.','WWY393131',10),
+(29,'2025-01-23',56567.60,'Recibida',NULL,NULL,NULL,5,'Plomería Total S.A.','WWY393131',8),
+(30,'2025-09-01',361760.45,'Recibida',NULL,NULL,NULL,11,'Cementos y Agregados del Valle','DJL266101',16),
+(31,'2026-02-10',130362.75,'Recibida',NULL,NULL,NULL,19,'Materiales Eléctricos del Sureste','TWV513518',12),
+(32,'2026-01-11',65360.87,'Cancelada',NULL,NULL,NULL,3,'Pinturas y Recubrimientos MX','EPU690795',8),
+(33,'2025-03-24',121175.01,'Recibida',NULL,NULL,NULL,28,'Comercial Herramientas Total','IZX918103',6),
+(34,'2026-02-03',161538.24,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',10),
+(35,'2025-10-06',351851.85,'Recibida',NULL,NULL,NULL,13,'Grupo Adhesivos Mexicanos','IOZ558845',1),
+(36,'2025-07-12',75979.12,'Recibida',NULL,NULL,NULL,9,'Suministros Industriales Pérez','BVH390137',17),
+(37,'2025-11-02',40925.60,'Cancelada',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',20),
+(38,'2026-02-04',136647.24,'Recibida',NULL,NULL,NULL,9,'Suministros Industriales Pérez','BVH390137',2),
+(39,'2025-11-13',12898.80,'Recibida',NULL,NULL,NULL,10,'Importadora de Herramientas Nacional','EXE121677',2),
+(40,'2025-07-14',223686.00,'Recibida',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',2),
+(41,'2026-08-19',375672.17,'Recibida',NULL,NULL,NULL,5,'Plomería Total S.A.','WWY393131',14),
+(42,'2026-06-10',76413.14,'Pendiente',NULL,NULL,NULL,30,'Maderas y Construcción del Sur','ERQ263135',6),
+(43,'2025-12-05',187543.62,'Recibida',NULL,NULL,NULL,26,'Suministros de Limpieza Profesional','ECD287163',11),
+(44,'2025-06-06',479726.00,'Pendiente',NULL,NULL,NULL,11,'Cementos y Agregados del Valle','DJL266101',5),
+(45,'2026-03-01',56107.80,'Recibida',NULL,NULL,NULL,7,'Herramientas Profesionales GH','FOY172918',18),
+(46,'2026-08-14',18744.32,'Recibida',NULL,NULL,NULL,2,'Distribuidora Ferretera Oaxaca','BZN799162',14),
+(47,'2026-07-27',205479.23,'Recibida',NULL,NULL,NULL,9,'Suministros Industriales Pérez','BVH390137',4),
+(48,'2025-12-31',175209.88,'Recibida',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',14),
+(49,'2025-05-05',310155.60,'Recibida',NULL,NULL,NULL,19,'Materiales Eléctricos del Sureste','TWV513518',5),
+(50,'2026-08-06',16934.25,'Cancelada',NULL,NULL,NULL,17,'Jardín y Vivero Suministros','MEK664386',14),
+(51,'2026-06-19',210298.13,'Cancelada',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',6),
+(52,'2026-02-11',381672.98,'Recibida',NULL,NULL,NULL,7,'Herramientas Profesionales GH','FOY172918',10),
+(53,'2025-12-10',131002.99,'Recibida',NULL,NULL,NULL,13,'Grupo Adhesivos Mexicanos','IOZ558845',6),
+(54,'2025-12-09',129262.32,'Recibida',NULL,NULL,NULL,11,'Cementos y Agregados del Valle','DJL266101',4),
+(55,'2025-05-18',286958.32,'Cancelada',NULL,NULL,NULL,25,'Aceros Oaxaca S.A. de C.V.','XKT598376',5),
+(56,'2025-07-27',203043.39,'Pendiente',NULL,NULL,NULL,25,'Aceros Oaxaca S.A. de C.V.','XKT598376',16),
+(57,'2026-03-02',115003.24,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',1),
+(58,'2026-04-27',193918.40,'Recibida',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',19),
+(59,'2026-03-05',163784.60,'Recibida',NULL,NULL,NULL,10,'Importadora de Herramientas Nacional','EXE121677',3),
+(60,'2026-02-07',285298.49,'Cancelada',NULL,NULL,NULL,4,'Grupo Eléctrico Industrial','CGF509217',14),
+(61,'2026-01-10',141926.50,'Recibida',NULL,NULL,NULL,23,'Herrajes y Candados Continental','MRV315683',10),
+(62,'2025-05-15',161898.28,'Recibida',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',15),
+(63,'2026-09-22',60083.01,'Recibida',NULL,NULL,NULL,17,'Jardín y Vivero Suministros','MEK664386',14),
+(64,'2026-06-03',21997.82,'Cancelada',NULL,NULL,NULL,10,'Importadora de Herramientas Nacional','EXE121677',5),
+(65,'2025-05-05',289707.17,'Recibida',NULL,NULL,NULL,22,'Pinturas Vinci de México','ZRM118269',19),
+(66,'2025-04-19',35112.87,'Recibida',NULL,NULL,NULL,29,'Distribuidora de Cables y Contactos','ETM706649',20),
+(67,'2026-06-12',101737.25,'Cancelada',NULL,NULL,NULL,21,'Distribuidora Nacional de Tornillos','VGV000872',7),
+(68,'2025-08-21',116348.07,'Recibida',NULL,NULL,NULL,21,'Distribuidora Nacional de Tornillos','VGV000872',4),
+(69,'2025-03-12',166054.92,'Recibida',NULL,NULL,NULL,18,'Grupo Constructor Zapoteca','VWR923773',13),
+(70,'2025-08-05',111557.70,'Recibida',NULL,NULL,NULL,1,'Tornillos y Fijaciones del Sur','ZOA374735',5),
+(71,'2025-02-11',384534.32,'Recibida',NULL,NULL,NULL,10,'Importadora de Herramientas Nacional','EXE121677',5),
+(72,'2025-07-28',295677.00,'Pendiente',NULL,NULL,NULL,11,'Cementos y Agregados del Valle','DJL266101',14),
+(73,'2026-01-19',138058.56,'Recibida',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',13),
+(74,'2026-02-07',46659.90,'Cancelada',NULL,NULL,NULL,30,'Maderas y Construcción del Sur','ERQ263135',9),
+(75,'2026-09-19',243550.56,'Recibida',NULL,NULL,NULL,27,'Grupo Ferretero del Istmo','PMD065641',14),
+(76,'2025-05-17',135144.60,'Recibida',NULL,NULL,NULL,28,'Comercial Herramientas Total','IZX918103',17),
+(77,'2025-01-04',61764.09,'Recibida',NULL,NULL,NULL,7,'Herramientas Profesionales GH','FOY172918',4),
+(78,'2025-12-27',46119.25,'Recibida',NULL,NULL,NULL,4,'Grupo Eléctrico Industrial','CGF509217',7),
+(79,'2026-03-29',232223.60,'Recibida',NULL,NULL,NULL,2,'Distribuidora Ferretera Oaxaca','BZN799162',12),
+(80,'2025-11-16',268288.00,'Recibida',NULL,NULL,NULL,11,'Cementos y Agregados del Valle','DJL266101',19),
+(81,'2025-11-26',304440.47,'Recibida',NULL,NULL,NULL,1,'Tornillos y Fijaciones del Sur','ZOA374735',19),
+(82,'2026-03-13',93937.94,'Recibida',NULL,NULL,NULL,6,'Aceros y Materiales del Istmo','SYU251361',11),
+(83,'2026-09-07',22445.64,'Recibida',NULL,NULL,NULL,24,'Proveedora Industrial Monte Albán','IHR961520',7),
+(84,'2026-05-29',32481.60,'Cancelada',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',10),
+(85,'2026-08-23',234567.90,'Recibida',NULL,NULL,NULL,5,'Plomería Total S.A.','WWY393131',7),
+(86,'2025-05-14',26495.72,'Pendiente',NULL,NULL,NULL,29,'Distribuidora de Cables y Contactos','ETM706649',20),
+(87,'2025-08-26',188922.24,'Recibida',NULL,NULL,NULL,27,'Grupo Ferretero del Istmo','PMD065641',9),
+(88,'2025-06-23',23114.05,'Cancelada',NULL,NULL,NULL,24,'Proveedora Industrial Monte Albán','IHR961520',10),
+(89,'2025-12-02',84029.00,'Cancelada',NULL,NULL,NULL,6,'Aceros y Materiales del Istmo','SYU251361',6),
+(90,'2026-07-12',297218.85,'Recibida',NULL,NULL,NULL,5,'Plomería Total S.A.','WWY393131',10),
+(91,'2025-09-13',407043.56,'Recibida',NULL,NULL,NULL,21,'Distribuidora Nacional de Tornillos','VGV000872',13),
+(92,'2025-08-29',136095.19,'Cancelada',NULL,NULL,NULL,15,'Equipos de Seguridad Industrial SA','FVD537805',4),
+(93,'2025-08-07',31826.52,'Recibida',NULL,NULL,NULL,12,'Distribuidora de Iluminación LED','XGQ333104',15),
+(94,'2025-07-05',108237.30,'Recibida',NULL,NULL,NULL,7,'Herramientas Profesionales GH','FOY172918',12),
+(95,'2026-01-24',73189.81,'Recibida',NULL,NULL,NULL,19,'Materiales Eléctricos del Sureste','TWV513518',8),
+(96,'2025-04-17',302934.60,'Recibida',NULL,NULL,NULL,15,'Equipos de Seguridad Industrial SA','FVD537805',15),
+(97,'2025-10-22',1174.36,'Recibida',NULL,NULL,NULL,5,'Plomería Total S.A.','WWY393131',18),
+(98,'2025-05-22',256759.50,'Pendiente',NULL,NULL,NULL,27,'Grupo Ferretero del Istmo','PMD065641',7),
+(99,'2025-09-28',36458.88,'Recibida',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',5),
+(100,'2025-04-22',122726.87,'Recibida',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',7),
+(101,'2026-07-06',72187.16,'Recibida',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',16),
+(102,'2025-04-05',214685.68,'Recibida',NULL,NULL,NULL,30,'Maderas y Construcción del Sur','ERQ263135',7),
+(103,'2025-03-17',153907.98,'Recibida',NULL,NULL,NULL,15,'Equipos de Seguridad Industrial SA','FVD537805',1),
+(104,'2025-01-26',35112.87,'Recibida',NULL,NULL,NULL,23,'Herrajes y Candados Continental','MRV315683',7),
+(105,'2026-01-30',81278.26,'Recibida',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',16),
+(106,'2025-09-29',323375.23,'Recibida',NULL,NULL,NULL,14,'Ferretería Mayorista del Pacífico','AON591949',1),
+(107,'2026-02-13',216476.48,'Pendiente',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',14),
+(108,'2026-09-18',199275.55,'Recibida',NULL,NULL,NULL,21,'Distribuidora Nacional de Tornillos','VGV000872',15),
+(109,'2025-02-20',149559.01,'Recibida',NULL,NULL,NULL,30,'Maderas y Construcción del Sur','ERQ263135',3),
+(110,'2026-04-27',47659.50,'Recibida',NULL,NULL,NULL,8,'Comercializadora Cerrajera','USB441483',14),
+(111,'2026-02-17',87127.34,'Cancelada',NULL,NULL,NULL,25,'Aceros Oaxaca S.A. de C.V.','XKT598376',8),
+(112,'2025-06-20',142738.75,'Recibida',NULL,NULL,NULL,9,'Suministros Industriales Pérez','BVH390137',3),
+(113,'2025-12-26',46857.14,'Pendiente',NULL,NULL,NULL,7,'Herramientas Profesionales GH','FOY172918',17),
+(114,'2026-09-08',298036.19,'Recibida',NULL,NULL,NULL,16,'Abrasivos y Discos MX','UCD559117',14),
+(115,'2025-06-17',8055.60,'Pendiente',NULL,NULL,NULL,4,'Grupo Eléctrico Industrial','CGF509217',12),
+(116,'2025-05-12',95121.89,'Recibida',NULL,NULL,NULL,4,'Grupo Eléctrico Industrial','CGF509217',12),
+(117,'2025-08-15',62289.20,'Recibida',NULL,NULL,NULL,30,'Maderas y Construcción del Sur','ERQ263135',19),
+(118,'2026-08-23',112575.49,'Recibida',NULL,NULL,NULL,30,'Maderas y Construcción del Sur','ERQ263135',8),
+(119,'2026-07-25',126506.94,'Cancelada',NULL,NULL,NULL,20,'Tuberías y Conexiones Hidráulicas','BJF343962',15),
+(120,'2025-06-14',369693.40,'Recibida',NULL,NULL,NULL,29,'Distribuidora de Cables y Contactos','ETM706649',14),
+(124,'2026-10-25',3363.33,'Recibida','2026-10-25 22:58:16',67,NULL,25,'Aceros Oaxaca S.A. de C.V.','XKT598376',2);
 /*!40000 ALTER TABLE `compras` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -373,7 +385,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_compra_foto_proveedor
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_compra_foto_proveedor
 BEFORE INSERT ON compras
 FOR EACH ROW
 BEGIN
@@ -396,35 +408,46 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_compra_recibida
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_compra_recibida
 AFTER UPDATE ON compras
 FOR EACH ROW
 BEGIN
-    DECLARE v_fin  INT DEFAULT 0;
-    DECLARE v_prod INT;
-    DECLARE v_cant INT;
+    DECLARE v_fin    INT DEFAULT 0;
+    DECLARE v_prod   INT;
+    DECLARE v_cant   INT;
+    DECLARE v_inc    VARCHAR(20);
+    DECLARE v_motivo VARCHAR(200);
+    DECLARE v_emp    INT;
     DECLARE cur CURSOR FOR
-        SELECT Id_Producto, Cantidad FROM detalle_compras
+        SELECT Id_Producto, COALESCE(Cantidad_Recibida, Cantidad), Incidencia, Motivo_Incidencia
+          FROM detalle_compras
          WHERE Id_Compras = NEW.Id_Compras AND Id_Producto IS NOT NULL;
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_fin = 1;
 
     IF OLD.Estado = 'Recibida' AND NEW.Estado <> 'Recibida' THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Una compra recibida no puede cambiar de estado';
+            SET MESSAGE_TEXT = 'Un pedido recibido no puede cambiar de estado';
     END IF;
 
-    IF OLD.Estado = 'Cancelada' AND NEW.Estado = 'Recibida' THEN
+    IF OLD.Estado = 'Cancelada' AND NEW.Estado <> 'Cancelada' THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Una compra cancelada no se puede recibir';
+            SET MESSAGE_TEXT = 'Un pedido cancelado no se puede recibir ni reactivar';
     END IF;
 
     IF OLD.Estado <> 'Recibida' AND NEW.Estado = 'Recibida' THEN
+        SET v_emp = COALESCE(NEW.Id_Empleado_Recibe, NEW.Id_Empleado);
         OPEN cur;
         leer: LOOP
-            FETCH cur INTO v_prod, v_cant;
+            FETCH cur INTO v_prod, v_cant, v_inc, v_motivo;
             IF v_fin = 1 THEN LEAVE leer; END IF;
-            CALL sp_mover_inventario(v_prod, v_cant, 'Entrada',
-                                     CONCAT('Compra #', NEW.Id_Compras), NEW.Id_Empleado);
+            IF v_cant > 0 THEN
+                CALL sp_mover_inventario(
+                    v_prod, v_cant, 'Entrada',
+                    LEFT(IF(v_inc = 'Ninguna',
+                            CONCAT('Pedido #', NEW.Id_Compras),
+                            CONCAT('Pedido #', NEW.Id_Compras, ' - ', v_inc, ': ', v_motivo)), 200),
+                    v_emp);
+            END IF;
         END LOOP;
         CLOSE cur;
     END IF;
@@ -445,6 +468,9 @@ DROP TABLE IF EXISTS `detalle_compras`;
 CREATE TABLE `detalle_compras` (
   `Id_Detalle` int(11) NOT NULL AUTO_INCREMENT,
   `Cantidad` int(11) NOT NULL,
+  `Cantidad_Recibida` int(11) DEFAULT NULL,
+  `Incidencia` enum('Ninguna','Faltante','Dañado') NOT NULL DEFAULT 'Ninguna',
+  `Motivo_Incidencia` varchar(200) DEFAULT NULL,
   `Precio_Unitario` decimal(10,2) NOT NULL,
   `Total` decimal(10,2) NOT NULL,
   `Id_Compras` int(11) NOT NULL,
@@ -458,8 +484,11 @@ CREATE TABLE `detalle_compras` (
   CONSTRAINT `detalle_compras_ibfk_2` FOREIGN KEY (`Id_Producto`) REFERENCES `productos` (`Id_Producto`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `CONSTRAINT_1` CHECK (`Cantidad` > 0),
   CONSTRAINT `chk_dcompra_precio` CHECK (`Precio_Unitario` >= 0),
-  CONSTRAINT `chk_dcompra_total` CHECK (`Total` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=182 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `chk_dcompra_total` CHECK (`Total` >= 0),
+  CONSTRAINT `chk_dcompra_cantidad` CHECK (`Cantidad` > 0),
+  CONSTRAINT `chk_dcompra_recibida` CHECK (`Cantidad_Recibida` is null or `Cantidad_Recibida` >= 0 and `Cantidad_Recibida` <= `Cantidad`),
+  CONSTRAINT `chk_dcompra_incidencia` CHECK (`Incidencia` = 'Ninguna' or `Motivo_Incidencia` is not null and trim(`Motivo_Incidencia`) <> '')
+) ENGINE=InnoDB AUTO_INCREMENT=218 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -468,189 +497,193 @@ CREATE TABLE `detalle_compras` (
 
 LOCK TABLES `detalle_compras` WRITE;
 /*!40000 ALTER TABLE `detalle_compras` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `detalle_compras` VALUES
-(1,113,623.36,70439.68,1,118,'7504482554108','Sierra Circular 7 1/4\"'),
-(2,39,615.23,23993.97,2,53,'7506053253526','Escoba de Plástico'),
-(3,26,2352.46,61163.96,3,81,'7508848253850','Cable THW Calibre 10 (Rollo 100m)'),
-(4,53,718.09,38058.77,4,47,'7504587222980','Adhesivo de Contacto 1L'),
-(5,148,71.67,10607.16,4,94,'7503901449055','Chapa para Puerta Exterior'),
-(6,58,2092.13,121343.54,4,136,'7509564483911','Taladro Inalámbrico 20V'),
-(7,10,1177.63,11776.30,5,87,'7506487419902','Jalador para Piso'),
-(8,57,2190.20,124841.40,5,45,'7506529046749','Router para Madera'),
-(9,18,1195.50,21519.00,6,6,'7501302743100','Cloro Industrial 1L'),
-(10,60,1065.30,63918.00,6,133,'7503264672371','Juego de Desarmadores 6 pzas'),
-(11,44,861.59,37909.96,7,113,'7507102794674','Tapones Auditivos (Par)'),
-(12,107,2339.83,250361.81,7,46,'7502405677173','Atornillador Eléctrico Inalámbrico'),
-(13,106,1658.74,175826.44,8,121,'7501272543150','Rodillo para Pintura 9\"'),
-(14,107,1082.72,115851.04,9,98,'7502372110355','Clavo de Acero 2\" (Caja 1kg)'),
-(15,20,284.16,5683.20,9,34,'7504978245719','Tornillo para Madera 2\" (Caja 100)'),
-(16,140,2112.18,295705.20,10,97,'1263112313','Ancla de Expansión 1/4\" (Caja 50)'),
-(17,90,145.72,13114.80,10,82,'7509663562499','Tijeras para Podar'),
-(18,24,1947.11,46730.64,10,71,'7505164698004','Lámpara LED de Techo 18W'),
-(19,85,1911.25,162456.25,11,79,'7508315163339','Varilla Corrugada 3/8\" 12m'),
-(20,79,1620.71,128036.09,12,85,'7503730026306','Llave de Nariz 1/2\"'),
-(21,24,69.08,1657.92,12,101,'7503849721586','Yeso para Construcción 20kg'),
-(22,94,1411.24,132656.56,13,16,'7502233703564','Aspersor Oscilante'),
-(23,47,1359.20,63882.40,14,4,'7509314894275','Perno Hexagonal 3/8x2\" (Caja 50)'),
-(24,62,120.85,7492.70,14,20,'750100000002','Lentes de Seguridad'),
-(25,111,167.13,18551.43,15,1,'750100000000','Charola para Pintura'),
-(26,32,2095.47,67055.04,15,5,'7504133648196','Lámpara de Mano Recargable'),
-(27,13,107.49,1397.37,16,95,'7506583852861','Cable THW Calibre 12 (Rollo 100m)'),
-(28,49,255.75,12531.75,17,88,'7509487814627','Arnés de Seguridad'),
-(29,56,915.70,51279.20,18,74,'7507406668819','Lija para Metal #80 (Caja 10)'),
-(30,94,1853.75,174252.50,18,31,'7504961331390','Manguera Flexible para WC'),
-(31,31,1239.94,38438.14,19,92,'7503608006020','Pegamento Blanco 1L'),
-(32,145,2065.22,299456.90,20,62,'7501130386114','Pistola de Calor 2000W'),
-(33,120,1337.48,160497.60,20,107,'7505684380142','Caladora Eléctrica 650W'),
-(34,56,2436.48,136442.88,20,124,'7504551376159','Nivel de Burbuja 60cm'),
-(35,32,838.73,26839.36,20,109,'7507048871061','Pija Galvanizada 1 1/2\" (Caja 100)'),
-(36,118,1672.23,197323.14,21,17,'7502540640961','Pintura Vinílica Blanca 4L'),
-(37,58,219.52,12732.16,22,18,'7502530756453','Flexómetro 5m'),
-(38,62,885.71,54914.02,23,148,'7508032890101','Aspersor Oscilante (2)'),
-(39,128,2367.60,303052.80,24,111,'7507968048084','Pastilla Termomagnética 20A'),
-(40,97,2352.46,228188.62,25,81,'7508848253850','Cable THW Calibre 10 (Rollo 100m)'),
-(41,10,2023.87,20238.70,26,90,'750100000009','Fertilizante Multiusos 1kg'),
-(42,96,937.53,90002.88,27,40,'750100000004','Pegamento Epóxico'),
-(43,70,1037.66,72636.20,28,116,'7508886817440','Cinta Canela 2\"'),
-(44,40,1372.35,54894.00,29,54,'7508148520088','Candado de Acero 50mm'),
-(45,10,167.36,1673.60,29,93,'7505021532489','Lija para Madera #120 (Caja 10)'),
-(46,139,2408.20,334739.80,30,149,'7508763061452','Sierra Circular 7 1/4\" (2)'),
-(47,83,325.55,27020.65,30,100,'750100000010','Botas de Seguridad con Casquillo'),
-(48,93,1401.75,130362.75,31,27,'7506672781625','Pintura en Spray Negro Mate'),
-(49,37,1766.51,65360.87,32,44,'7507527395548','Chaleco Reflejante'),
-(50,99,1223.99,121175.01,33,76,'7503533385514','Tornillo Hexagonal 5/16\" (Caja 50)'),
-(51,96,1682.69,161538.24,34,33,'7506670967626','Centro de Carga 8 Espacios'),
-(52,147,2393.55,351851.85,35,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
-(53,140,69.08,9671.20,36,101,'7503849721586','Yeso para Construcción 20kg'),
-(54,116,571.62,66307.92,36,132,'7503580866325','Lámpara de Emergencia'),
-(55,20,2046.28,40925.60,37,65,'7506426028487','Pinzas de Corte Diagonal 8\"'),
-(56,24,668.01,16032.24,38,39,'7505255950560','Rastrillo de Jardín'),
-(57,55,2193.00,120615.00,38,83,'7504698652048','Pintura Vinílica Blanca 19L'),
-(58,120,107.49,12898.80,39,95,'7506583852861','Cable THW Calibre 12 (Rollo 100m)'),
-(59,102,2193.00,223686.00,40,83,'7504698652048','Pintura Vinílica Blanca 19L'),
-(60,105,257.50,27037.50,41,104,'7507272996077','Pinzas de Presión 10\"'),
-(61,149,2339.83,348634.67,41,46,'7502405677173','Atornillador Eléctrico Inalámbrico'),
-(62,37,2065.22,76413.14,42,62,'7501130386114','Pistola de Calor 2000W'),
-(63,114,606.33,69121.62,43,48,'7502067712266','Esmalte Alquidálico 1L'),
-(64,54,2193.00,118422.00,43,83,'7504698652048','Pintura Vinílica Blanca 19L'),
-(65,130,2422.08,314870.40,44,91,'7507130875418','Cilindro para Chapa'),
-(66,140,1177.54,164855.60,44,138,'7503609502981','Flexómetro 8m'),
-(67,73,768.60,56107.80,45,37,'7505254458207','Martillo de Bola 8 oz'),
-(68,112,167.36,18744.32,46,93,'7505021532489','Lija para Madera #120 (Caja 10)'),
-(69,33,565.81,18671.73,47,145,'7502644511332','Esmeriladora Angular 4 1/2\" (2)'),
-(70,125,1494.46,186807.50,47,123,'7503316422964','Cinta Doble Cara'),
-(71,131,1337.48,175209.88,48,107,'7505684380142','Caladora Eléctrica 650W'),
-(72,131,2367.60,310155.60,49,111,'7507968048084','Pastilla Termomagnética 20A'),
-(73,67,252.75,16934.25,50,15,'7508007537041','Apagador Sencillo'),
-(74,102,1604.14,163622.28,51,57,'7503926358808','Multímetro Digital'),
-(75,65,718.09,46675.85,51,47,'7504587222980','Adhesivo de Contacto 1L'),
-(76,139,1076.62,149650.18,52,29,'7501139133719','Barniz Marino 1L'),
-(77,136,1706.05,232022.80,52,144,'7507262424331','Grapa Galvanizada (Caja 1kg) (2)'),
-(78,61,2147.59,131002.99,53,72,'7503159727424','Tira LED 5m'),
-(79,72,1795.31,129262.32,54,131,'7501786760942','Arena de Río (Bolsa 40kg)'),
-(80,134,2141.48,286958.32,55,128,'7503330026074','Mascarilla Antipolvo'),
-(81,91,1795.31,163373.21,56,131,'7501786760942','Arena de Río (Bolsa 40kg)'),
-(82,17,2333.54,39670.18,56,120,'750100000012','Rotomartillo SDS Plus 800W'),
-(83,42,890.12,37385.04,57,51,'7502261902852','Jabón Líquido para Manos 1L'),
-(84,55,1411.24,77618.20,57,16,'7502233703564','Aspersor Oscilante'),
-(85,130,1491.68,193918.40,58,42,'7503492861360','Sellador para Concreto 4L'),
-(86,59,2141.48,126347.32,59,128,'7503330026074','Mascarilla Antipolvo'),
-(87,16,2339.83,37437.28,59,46,'7502405677173','Atornillador Eléctrico Inalámbrico'),
-(88,41,167.36,6861.76,60,93,'7505021532489','Lija para Madera #120 (Caja 10)'),
-(89,143,1947.11,278436.73,60,71,'7505164698004','Lámpara LED de Techo 18W'),
-(90,115,789.30,90769.50,61,139,'7505920943322','Rondana Plana 1/4\" (Caja 100)'),
-(91,25,2046.28,51157.00,61,65,'7506426028487','Pinzas de Corte Diagonal 8\"'),
-(92,64,2083.51,133344.64,62,127,'7505378426603','Pulidora Orbital 6\"'),
-(93,111,257.24,28553.64,62,141,'7508638548674','Juego de Llaves Allen 9 pzas'),
-(94,39,1540.59,60083.01,63,7,'7504004954167','Cúter Profesional 18mm'),
-(95,38,578.89,21997.82,64,70,'750100000007','Alicate Universal 8\"'),
-(96,121,1254.26,151765.46,65,10,'750100000001','Cinta Aislante'),
-(97,141,978.31,137941.71,65,11,'7506077328932','Calibrador Vernier'),
-(98,117,300.11,35112.87,66,130,'750100000013','Guantes de Carnaza'),
-(99,69,1235.81,85270.89,67,22,'7504170543077','Taquete de Plástico #8 (Caja 100)'),
-(100,113,145.72,16466.36,67,82,'7509663562499','Tijeras para Podar'),
-(101,23,2095.47,48195.81,68,5,'7504133648196','Lámpara de Mano Recargable'),
-(102,33,2065.22,68152.26,68,62,'7501130386114','Pistola de Calor 2000W'),
-(103,24,1649.21,39581.04,69,50,'750100000005','Nivel Láser'),
-(104,102,1239.94,126473.88,69,92,'7503608006020','Pegamento Blanco 1L'),
-(105,10,1682.69,16826.90,70,33,'7506670967626','Centro de Carga 8 Espacios'),
-(106,85,1114.48,94730.80,70,23,'7503484983995','Compresor de Aire 1HP'),
-(107,138,2190.20,302247.60,71,45,'7506529046749','Router para Madera'),
-(108,76,1082.72,82286.72,71,98,'7502372110355','Clavo de Acero 2\" (Caja 1kg)'),
-(109,135,2190.20,295677.00,72,45,'7506529046749','Router para Madera'),
-(110,57,2422.08,138058.56,73,91,'7507130875418','Cilindro para Chapa'),
-(111,34,1372.35,46659.90,74,54,'7508148520088','Candado de Acero 50mm'),
-(112,116,1301.39,150961.24,75,36,'7507683757414','Chapa para Puerta Interior'),
-(113,86,1076.62,92589.32,75,29,'7501139133719','Barniz Marino 1L'),
-(114,45,218.27,9822.15,76,108,'7506261891335','Cubeta de Plástico 19L'),
-(115,23,255.75,5882.25,76,88,'7509487814627','Arnés de Seguridad'),
-(116,60,1990.67,119440.20,76,143,'7502519761040','Carretilla de mecanico'),
-(117,93,664.13,61764.09,77,103,'7501482609515','Multicontacto 6 Salidas'),
-(118,25,1844.77,46119.25,78,69,'7508626000926','Tornillo para Tablaroca (Caja 100)'),
-(119,140,1658.74,232223.60,79,121,'7501272543150','Rodillo para Pintura 9\"'),
-(120,92,1405.31,129288.52,80,55,'7506269507001','Pasador de Seguridad'),
-(121,122,1139.34,138999.48,80,38,'7505687669776','Cerrojo de Sobreponer'),
-(122,37,2393.55,88561.35,81,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
-(123,137,1575.76,215879.12,81,86,'7506774348000','Guantes de Jardinería'),
-(124,130,623.36,81036.80,82,118,'7504482554108','Sierra Circular 7 1/4\"'),
-(125,42,307.17,12901.14,82,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
-(126,18,1246.98,22445.64,83,32,'7501745267574','Rotomartillo Demoledor 1500W'),
-(127,30,1082.72,32481.60,84,98,'7502372110355','Clavo de Acero 2\" (Caja 1kg)'),
-(128,98,2393.55,234567.90,85,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
-(129,103,257.24,26495.72,86,141,'7508638548674','Juego de Llaves Allen 9 pzas'),
-(130,78,2422.08,188922.24,87,91,'7507130875418','Cilindro para Chapa'),
-(131,71,325.55,23114.05,88,100,'750100000010','Botas de Seguridad con Casquillo'),
-(132,110,763.90,84029.00,89,12,'7504804995586','Llave de Paso 1/2\"'),
-(133,68,951.18,64680.24,90,3,'7503311595947','Desarmador de Cruz #2'),
-(134,141,1649.21,232538.61,90,50,'750100000005','Nivel Láser'),
-(135,146,1411.24,206041.04,91,16,'7502233703564','Aspersor Oscilante'),
-(136,92,2184.81,201002.52,91,89,'7502463854004','Pala Recta para Jardín'),
-(137,34,1923.64,65403.76,92,24,'7507547276750','Tornillo Autorroscante 1\" (Caja 100)'),
-(138,35,1649.21,57722.35,92,50,'750100000005','Nivel Láser'),
-(139,89,145.72,12969.08,92,82,'7509663562499','Tijeras para Podar'),
-(140,132,241.11,31826.52,93,60,'750100000006','Banda para Lijadora'),
-(141,95,1139.34,108237.30,94,38,'7505687669776','Cerrojo de Sobreponer'),
-(142,47,1557.23,73189.81,95,84,'7505525068415','Bisagra de Piso 3\"'),
-(143,144,1372.35,197618.40,96,54,'7508148520088','Candado de Acero 50mm'),
-(144,44,2393.55,105316.20,96,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
-(145,17,69.08,1174.36,97,101,'7503849721586','Yeso para Construcción 20kg'),
-(146,95,2112.18,200657.10,98,97,'1263112313','Ancla de Expansión 1/4\" (Caja 50)'),
-(147,90,623.36,56102.40,98,118,'7504482554108','Sierra Circular 7 1/4\"'),
-(148,32,1139.34,36458.88,99,38,'7505687669776','Cerrojo de Sobreponer'),
-(149,14,307.17,4300.38,100,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
-(150,91,1301.39,118426.49,100,36,'7507683757414','Chapa para Puerta Interior'),
-(151,52,1195.50,62166.00,101,6,'7501302743100','Cloro Industrial 1L'),
-(152,17,589.48,10021.16,101,25,'7501369558506','Impermeabilizante Acrílico 19L'),
-(153,92,2333.54,214685.68,102,120,'750100000012','Rotomartillo SDS Plus 800W'),
-(154,76,145.72,11074.72,103,82,'7509663562499','Tijeras para Podar'),
-(155,146,978.31,142833.26,103,11,'7506077328932','Calibrador Vernier'),
-(156,117,300.11,35112.87,104,130,'750100000013','Guantes de Carnaza'),
-(157,49,1658.74,81278.26,105,121,'7501272543150','Rodillo para Pintura 9\"'),
-(158,132,2333.54,308027.28,106,120,'750100000012','Rotomartillo SDS Plus 800W'),
-(159,127,120.85,15347.95,106,20,'750100000002','Lentes de Seguridad'),
-(160,116,1795.31,208255.96,107,131,'7501786760942','Arena de Río (Bolsa 40kg)'),
-(161,119,69.08,8220.52,107,101,'7503849721586','Yeso para Construcción 20kg'),
-(162,97,1706.05,165486.85,108,144,'7507262424331','Grapa Galvanizada (Caja 1kg) (2)'),
-(163,110,307.17,33788.70,108,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
-(164,127,1177.63,149559.01,109,87,'7506487419902','Jalador para Piso'),
-(165,34,1401.75,47659.50,110,27,'7506672781625','Pintura en Spray Negro Mate'),
-(166,53,937.53,49689.09,111,40,'750100000004','Pegamento Epóxico'),
-(167,115,325.55,37438.25,111,100,'750100000010','Botas de Seguridad con Casquillo'),
-(168,77,1853.75,142738.75,112,31,'7504961331390','Manguera Flexible para WC'),
-(169,22,2129.87,46857.14,113,112,'7506022147552','Thinner Estándar 1L'),
-(170,143,1083.01,154870.43,114,52,'7505406266787','Apagador de Escalera'),
-(171,57,2185.97,124600.29,114,21,'7508351627246','Foco LED 12W'),
-(172,77,241.11,18565.47,114,60,'750100000006','Banda para Lijadora'),
-(173,28,287.70,8055.60,115,41,'7509563414931','Martillo de Uña 16 oz'),
-(174,47,2023.87,95121.89,116,90,'750100000009','Fertilizante Multiusos 1kg'),
-(175,40,1557.23,62289.20,117,84,'7505525068415','Bisagra de Piso 3\"'),
-(176,11,368.39,4052.29,118,129,'7505050795239','Block de Concreto 15x20x40'),
-(177,96,1130.45,108523.20,118,2,'7502784537981','Foco Ahorrador Espiral 20W'),
-(178,133,951.18,126506.94,119,3,'7503311595947','Desarmador de Cruz #2'),
-(179,144,2190.20,315388.80,120,45,'7506529046749','Router para Madera'),
-(180,140,387.89,54304.60,120,43,'7509353021300','Desarmador Plano 1/4x6\"');
+(1,113,113,'Ninguna',NULL,623.36,70439.68,1,118,'7504482554108','Sierra Circular 7 1/4\"'),
+(2,39,39,'Ninguna',NULL,615.23,23993.97,2,53,'7506053253526','Escoba de Plástico'),
+(3,26,26,'Ninguna',NULL,2352.46,61163.96,3,81,'7508848253850','Cable THW Calibre 10 (Rollo 100m)'),
+(4,53,53,'Ninguna',NULL,718.09,38058.77,4,47,'7504587222980','Adhesivo de Contacto 1L'),
+(5,148,148,'Ninguna',NULL,71.67,10607.16,4,94,'7503901449055','Chapa para Puerta Exterior'),
+(6,58,58,'Ninguna',NULL,2092.13,121343.54,4,136,'7509564483911','Taladro Inalámbrico 20V'),
+(7,10,10,'Ninguna',NULL,1177.63,11776.30,5,87,'7506487419902','Jalador para Piso'),
+(8,57,57,'Ninguna',NULL,2190.20,124841.40,5,45,'7506529046749','Router para Madera'),
+(9,18,18,'Ninguna',NULL,1195.50,21519.00,6,6,'7501302743100','Cloro Industrial 1L'),
+(10,60,60,'Ninguna',NULL,1065.30,63918.00,6,133,'7503264672371','Juego de Desarmadores 6 pzas'),
+(11,44,44,'Ninguna',NULL,861.59,37909.96,7,113,'7507102794674','Tapones Auditivos (Par)'),
+(12,107,107,'Ninguna',NULL,2339.83,250361.81,7,46,'7502405677173','Atornillador Eléctrico Inalámbrico'),
+(13,106,106,'Ninguna',NULL,1658.74,175826.44,8,121,'7501272543150','Rodillo para Pintura 9\"'),
+(14,107,107,'Ninguna',NULL,1082.72,115851.04,9,98,'7502372110355','Clavo de Acero 2\" (Caja 1kg)'),
+(15,20,20,'Ninguna',NULL,284.16,5683.20,9,34,'7504978245719','Tornillo para Madera 2\" (Caja 100)'),
+(16,140,NULL,'Ninguna',NULL,2112.18,295705.20,10,97,'1263112313','Ancla de Expansión 1/4\" (Caja 50)'),
+(17,90,NULL,'Ninguna',NULL,145.72,13114.80,10,82,'7509663562499','Tijeras para Podar'),
+(18,24,NULL,'Ninguna',NULL,1947.11,46730.64,10,71,'7505164698004','Lámpara LED de Techo 18W'),
+(19,85,85,'Ninguna',NULL,1911.25,162456.25,11,79,'7508315163339','Varilla Corrugada 3/8\" 12m'),
+(20,79,79,'Ninguna',NULL,1620.71,128036.09,12,85,'7503730026306','Llave de Nariz 1/2\"'),
+(21,24,24,'Ninguna',NULL,69.08,1657.92,12,101,'7503849721586','Yeso para Construcción 20kg'),
+(22,94,94,'Ninguna',NULL,1411.24,132656.56,13,16,'7502233703564','Aspersor Oscilante'),
+(23,47,47,'Ninguna',NULL,1359.20,63882.40,14,4,'7509314894275','Perno Hexagonal 3/8x2\" (Caja 50)'),
+(24,62,62,'Ninguna',NULL,120.85,7492.70,14,20,'750100000002','Lentes de Seguridad'),
+(25,111,111,'Ninguna',NULL,167.13,18551.43,15,1,'750100000000','Charola para Pintura'),
+(26,32,32,'Ninguna',NULL,2095.47,67055.04,15,5,'7504133648196','Lámpara de Mano Recargable'),
+(27,13,13,'Ninguna',NULL,107.49,1397.37,16,95,'7506583852861','Cable THW Calibre 12 (Rollo 100m)'),
+(28,49,49,'Ninguna',NULL,255.75,12531.75,17,88,'7509487814627','Arnés de Seguridad'),
+(29,56,56,'Ninguna',NULL,915.70,51279.20,18,74,'7507406668819','Lija para Metal #80 (Caja 10)'),
+(30,94,94,'Ninguna',NULL,1853.75,174252.50,18,31,'7504961331390','Manguera Flexible para WC'),
+(31,31,31,'Ninguna',NULL,1239.94,38438.14,19,92,'7503608006020','Pegamento Blanco 1L'),
+(32,145,145,'Ninguna',NULL,2065.22,299456.90,20,62,'7501130386114','Pistola de Calor 2000W'),
+(33,120,120,'Ninguna',NULL,1337.48,160497.60,20,107,'7505684380142','Caladora Eléctrica 650W'),
+(34,56,56,'Ninguna',NULL,2436.48,136442.88,20,124,'7504551376159','Nivel de Burbuja 60cm'),
+(35,32,32,'Ninguna',NULL,838.73,26839.36,20,109,'7507048871061','Pija Galvanizada 1 1/2\" (Caja 100)'),
+(36,118,118,'Ninguna',NULL,1672.23,197323.14,21,17,'7502540640961','Pintura Vinílica Blanca 4L'),
+(37,58,NULL,'Ninguna',NULL,219.52,12732.16,22,18,'7502530756453','Flexómetro 5m'),
+(38,62,62,'Ninguna',NULL,885.71,54914.02,23,148,'7508032890101','Aspersor Oscilante (2)'),
+(39,128,128,'Ninguna',NULL,2367.60,303052.80,24,111,'7507968048084','Pastilla Termomagnética 20A'),
+(40,97,97,'Ninguna',NULL,2352.46,228188.62,25,81,'7508848253850','Cable THW Calibre 10 (Rollo 100m)'),
+(41,10,NULL,'Ninguna',NULL,2023.87,20238.70,26,90,'750100000009','Fertilizante Multiusos 1kg'),
+(42,96,96,'Ninguna',NULL,937.53,90002.88,27,40,'750100000004','Pegamento Epóxico'),
+(43,70,70,'Ninguna',NULL,1037.66,72636.20,28,116,'7508886817440','Cinta Canela 2\"'),
+(44,40,40,'Ninguna',NULL,1372.35,54894.00,29,54,'7508148520088','Candado de Acero 50mm'),
+(45,10,10,'Ninguna',NULL,167.36,1673.60,29,93,'7505021532489','Lija para Madera #120 (Caja 10)'),
+(46,139,139,'Ninguna',NULL,2408.20,334739.80,30,149,'7508763061452','Sierra Circular 7 1/4\" (2)'),
+(47,83,83,'Ninguna',NULL,325.55,27020.65,30,100,'750100000010','Botas de Seguridad con Casquillo'),
+(48,93,93,'Ninguna',NULL,1401.75,130362.75,31,27,'7506672781625','Pintura en Spray Negro Mate'),
+(49,37,NULL,'Ninguna',NULL,1766.51,65360.87,32,44,'7507527395548','Chaleco Reflejante'),
+(50,99,99,'Ninguna',NULL,1223.99,121175.01,33,76,'7503533385514','Tornillo Hexagonal 5/16\" (Caja 50)'),
+(51,96,96,'Ninguna',NULL,1682.69,161538.24,34,33,'7506670967626','Centro de Carga 8 Espacios'),
+(52,147,147,'Ninguna',NULL,2393.55,351851.85,35,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
+(53,140,140,'Ninguna',NULL,69.08,9671.20,36,101,'7503849721586','Yeso para Construcción 20kg'),
+(54,116,116,'Ninguna',NULL,571.62,66307.92,36,132,'7503580866325','Lámpara de Emergencia'),
+(55,20,NULL,'Ninguna',NULL,2046.28,40925.60,37,65,'7506426028487','Pinzas de Corte Diagonal 8\"'),
+(56,24,24,'Ninguna',NULL,668.01,16032.24,38,39,'7505255950560','Rastrillo de Jardín'),
+(57,55,55,'Ninguna',NULL,2193.00,120615.00,38,83,'7504698652048','Pintura Vinílica Blanca 19L'),
+(58,120,120,'Ninguna',NULL,107.49,12898.80,39,95,'7506583852861','Cable THW Calibre 12 (Rollo 100m)'),
+(59,102,102,'Ninguna',NULL,2193.00,223686.00,40,83,'7504698652048','Pintura Vinílica Blanca 19L'),
+(60,105,105,'Ninguna',NULL,257.50,27037.50,41,104,'7507272996077','Pinzas de Presión 10\"'),
+(61,149,149,'Ninguna',NULL,2339.83,348634.67,41,46,'7502405677173','Atornillador Eléctrico Inalámbrico'),
+(62,37,NULL,'Ninguna',NULL,2065.22,76413.14,42,62,'7501130386114','Pistola de Calor 2000W'),
+(63,114,114,'Ninguna',NULL,606.33,69121.62,43,48,'7502067712266','Esmalte Alquidálico 1L'),
+(64,54,54,'Ninguna',NULL,2193.00,118422.00,43,83,'7504698652048','Pintura Vinílica Blanca 19L'),
+(65,130,NULL,'Ninguna',NULL,2422.08,314870.40,44,91,'7507130875418','Cilindro para Chapa'),
+(66,140,NULL,'Ninguna',NULL,1177.54,164855.60,44,138,'7503609502981','Flexómetro 8m'),
+(67,73,73,'Ninguna',NULL,768.60,56107.80,45,37,'7505254458207','Martillo de Bola 8 oz'),
+(68,112,112,'Ninguna',NULL,167.36,18744.32,46,93,'7505021532489','Lija para Madera #120 (Caja 10)'),
+(69,33,33,'Ninguna',NULL,565.81,18671.73,47,145,'7502644511332','Esmeriladora Angular 4 1/2\" (2)'),
+(70,125,125,'Ninguna',NULL,1494.46,186807.50,47,123,'7503316422964','Cinta Doble Cara'),
+(71,131,131,'Ninguna',NULL,1337.48,175209.88,48,107,'7505684380142','Caladora Eléctrica 650W'),
+(72,131,131,'Ninguna',NULL,2367.60,310155.60,49,111,'7507968048084','Pastilla Termomagnética 20A'),
+(73,67,NULL,'Ninguna',NULL,252.75,16934.25,50,15,'7508007537041','Apagador Sencillo'),
+(74,102,NULL,'Ninguna',NULL,1604.14,163622.28,51,57,'7503926358808','Multímetro Digital'),
+(75,65,NULL,'Ninguna',NULL,718.09,46675.85,51,47,'7504587222980','Adhesivo de Contacto 1L'),
+(76,139,139,'Ninguna',NULL,1076.62,149650.18,52,29,'7501139133719','Barniz Marino 1L'),
+(77,136,136,'Ninguna',NULL,1706.05,232022.80,52,144,'7507262424331','Grapa Galvanizada (Caja 1kg) (2)'),
+(78,61,61,'Ninguna',NULL,2147.59,131002.99,53,72,'7503159727424','Tira LED 5m'),
+(79,72,72,'Ninguna',NULL,1795.31,129262.32,54,131,'7501786760942','Arena de Río (Bolsa 40kg)'),
+(80,134,NULL,'Ninguna',NULL,2141.48,286958.32,55,128,'7503330026074','Mascarilla Antipolvo'),
+(81,91,NULL,'Ninguna',NULL,1795.31,163373.21,56,131,'7501786760942','Arena de Río (Bolsa 40kg)'),
+(82,17,NULL,'Ninguna',NULL,2333.54,39670.18,56,120,'750100000012','Rotomartillo SDS Plus 800W'),
+(83,42,42,'Ninguna',NULL,890.12,37385.04,57,51,'7502261902852','Jabón Líquido para Manos 1L'),
+(84,55,55,'Ninguna',NULL,1411.24,77618.20,57,16,'7502233703564','Aspersor Oscilante'),
+(85,130,130,'Ninguna',NULL,1491.68,193918.40,58,42,'7503492861360','Sellador para Concreto 4L'),
+(86,59,59,'Ninguna',NULL,2141.48,126347.32,59,128,'7503330026074','Mascarilla Antipolvo'),
+(87,16,16,'Ninguna',NULL,2339.83,37437.28,59,46,'7502405677173','Atornillador Eléctrico Inalámbrico'),
+(88,41,NULL,'Ninguna',NULL,167.36,6861.76,60,93,'7505021532489','Lija para Madera #120 (Caja 10)'),
+(89,143,NULL,'Ninguna',NULL,1947.11,278436.73,60,71,'7505164698004','Lámpara LED de Techo 18W'),
+(90,115,115,'Ninguna',NULL,789.30,90769.50,61,139,'7505920943322','Rondana Plana 1/4\" (Caja 100)'),
+(91,25,25,'Ninguna',NULL,2046.28,51157.00,61,65,'7506426028487','Pinzas de Corte Diagonal 8\"'),
+(92,64,64,'Ninguna',NULL,2083.51,133344.64,62,127,'7505378426603','Pulidora Orbital 6\"'),
+(93,111,111,'Ninguna',NULL,257.24,28553.64,62,141,'7508638548674','Juego de Llaves Allen 9 pzas'),
+(94,39,39,'Ninguna',NULL,1540.59,60083.01,63,7,'7504004954167','Cúter Profesional 18mm'),
+(95,38,NULL,'Ninguna',NULL,578.89,21997.82,64,70,'750100000007','Alicate Universal 8\"'),
+(96,121,121,'Ninguna',NULL,1254.26,151765.46,65,10,'750100000001','Cinta Aislante'),
+(97,141,141,'Ninguna',NULL,978.31,137941.71,65,11,'7506077328932','Calibrador Vernier'),
+(98,117,117,'Ninguna',NULL,300.11,35112.87,66,130,'750100000013','Guantes de Carnaza'),
+(99,69,NULL,'Ninguna',NULL,1235.81,85270.89,67,22,'7504170543077','Taquete de Plástico #8 (Caja 100)'),
+(100,113,NULL,'Ninguna',NULL,145.72,16466.36,67,82,'7509663562499','Tijeras para Podar'),
+(101,23,23,'Ninguna',NULL,2095.47,48195.81,68,5,'7504133648196','Lámpara de Mano Recargable'),
+(102,33,33,'Ninguna',NULL,2065.22,68152.26,68,62,'7501130386114','Pistola de Calor 2000W'),
+(103,24,24,'Ninguna',NULL,1649.21,39581.04,69,50,'750100000005','Nivel Láser'),
+(104,102,102,'Ninguna',NULL,1239.94,126473.88,69,92,'7503608006020','Pegamento Blanco 1L'),
+(105,10,10,'Ninguna',NULL,1682.69,16826.90,70,33,'7506670967626','Centro de Carga 8 Espacios'),
+(106,85,85,'Ninguna',NULL,1114.48,94730.80,70,23,'7503484983995','Compresor de Aire 1HP'),
+(107,138,138,'Ninguna',NULL,2190.20,302247.60,71,45,'7506529046749','Router para Madera'),
+(108,76,76,'Ninguna',NULL,1082.72,82286.72,71,98,'7502372110355','Clavo de Acero 2\" (Caja 1kg)'),
+(109,135,NULL,'Ninguna',NULL,2190.20,295677.00,72,45,'7506529046749','Router para Madera'),
+(110,57,57,'Ninguna',NULL,2422.08,138058.56,73,91,'7507130875418','Cilindro para Chapa'),
+(111,34,NULL,'Ninguna',NULL,1372.35,46659.90,74,54,'7508148520088','Candado de Acero 50mm'),
+(112,116,116,'Ninguna',NULL,1301.39,150961.24,75,36,'7507683757414','Chapa para Puerta Interior'),
+(113,86,86,'Ninguna',NULL,1076.62,92589.32,75,29,'7501139133719','Barniz Marino 1L'),
+(114,45,45,'Ninguna',NULL,218.27,9822.15,76,108,'7506261891335','Cubeta de Plástico 19L'),
+(115,23,23,'Ninguna',NULL,255.75,5882.25,76,88,'7509487814627','Arnés de Seguridad'),
+(116,60,60,'Ninguna',NULL,1990.67,119440.20,76,143,'7502519761040','Carretilla de mecanico'),
+(117,93,93,'Ninguna',NULL,664.13,61764.09,77,103,'7501482609515','Multicontacto 6 Salidas'),
+(118,25,25,'Ninguna',NULL,1844.77,46119.25,78,69,'7508626000926','Tornillo para Tablaroca (Caja 100)'),
+(119,140,140,'Ninguna',NULL,1658.74,232223.60,79,121,'7501272543150','Rodillo para Pintura 9\"'),
+(120,92,92,'Ninguna',NULL,1405.31,129288.52,80,55,'7506269507001','Pasador de Seguridad'),
+(121,122,122,'Ninguna',NULL,1139.34,138999.48,80,38,'7505687669776','Cerrojo de Sobreponer'),
+(122,37,37,'Ninguna',NULL,2393.55,88561.35,81,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
+(123,137,137,'Ninguna',NULL,1575.76,215879.12,81,86,'7506774348000','Guantes de Jardinería'),
+(124,130,130,'Ninguna',NULL,623.36,81036.80,82,118,'7504482554108','Sierra Circular 7 1/4\"'),
+(125,42,42,'Ninguna',NULL,307.17,12901.14,82,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
+(126,18,18,'Ninguna',NULL,1246.98,22445.64,83,32,'7501745267574','Rotomartillo Demoledor 1500W'),
+(127,30,NULL,'Ninguna',NULL,1082.72,32481.60,84,98,'7502372110355','Clavo de Acero 2\" (Caja 1kg)'),
+(128,98,98,'Ninguna',NULL,2393.55,234567.90,85,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
+(129,103,NULL,'Ninguna',NULL,257.24,26495.72,86,141,'7508638548674','Juego de Llaves Allen 9 pzas'),
+(130,78,78,'Ninguna',NULL,2422.08,188922.24,87,91,'7507130875418','Cilindro para Chapa'),
+(131,71,NULL,'Ninguna',NULL,325.55,23114.05,88,100,'750100000010','Botas de Seguridad con Casquillo'),
+(132,110,NULL,'Ninguna',NULL,763.90,84029.00,89,12,'7504804995586','Llave de Paso 1/2\"'),
+(133,68,68,'Ninguna',NULL,951.18,64680.24,90,3,'7503311595947','Desarmador de Cruz #2'),
+(134,141,141,'Ninguna',NULL,1649.21,232538.61,90,50,'750100000005','Nivel Láser'),
+(135,146,146,'Ninguna',NULL,1411.24,206041.04,91,16,'7502233703564','Aspersor Oscilante'),
+(136,92,92,'Ninguna',NULL,2184.81,201002.52,91,89,'7502463854004','Pala Recta para Jardín'),
+(137,34,NULL,'Ninguna',NULL,1923.64,65403.76,92,24,'7507547276750','Tornillo Autorroscante 1\" (Caja 100)'),
+(138,35,NULL,'Ninguna',NULL,1649.21,57722.35,92,50,'750100000005','Nivel Láser'),
+(139,89,NULL,'Ninguna',NULL,145.72,12969.08,92,82,'7509663562499','Tijeras para Podar'),
+(140,132,132,'Ninguna',NULL,241.11,31826.52,93,60,'750100000006','Banda para Lijadora'),
+(141,95,95,'Ninguna',NULL,1139.34,108237.30,94,38,'7505687669776','Cerrojo de Sobreponer'),
+(142,47,47,'Ninguna',NULL,1557.23,73189.81,95,84,'7505525068415','Bisagra de Piso 3\"'),
+(143,144,144,'Ninguna',NULL,1372.35,197618.40,96,54,'7508148520088','Candado de Acero 50mm'),
+(144,44,44,'Ninguna',NULL,2393.55,105316.20,96,99,'7506095589288','Esmeriladora Angular 4 1/2\"'),
+(145,17,17,'Ninguna',NULL,69.08,1174.36,97,101,'7503849721586','Yeso para Construcción 20kg'),
+(146,95,NULL,'Ninguna',NULL,2112.18,200657.10,98,97,'1263112313','Ancla de Expansión 1/4\" (Caja 50)'),
+(147,90,NULL,'Ninguna',NULL,623.36,56102.40,98,118,'7504482554108','Sierra Circular 7 1/4\"'),
+(148,32,32,'Ninguna',NULL,1139.34,36458.88,99,38,'7505687669776','Cerrojo de Sobreponer'),
+(149,14,14,'Ninguna',NULL,307.17,4300.38,100,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
+(150,91,91,'Ninguna',NULL,1301.39,118426.49,100,36,'7507683757414','Chapa para Puerta Interior'),
+(151,52,52,'Ninguna',NULL,1195.50,62166.00,101,6,'7501302743100','Cloro Industrial 1L'),
+(152,17,17,'Ninguna',NULL,589.48,10021.16,101,25,'7501369558506','Impermeabilizante Acrílico 19L'),
+(153,92,92,'Ninguna',NULL,2333.54,214685.68,102,120,'750100000012','Rotomartillo SDS Plus 800W'),
+(154,76,76,'Ninguna',NULL,145.72,11074.72,103,82,'7509663562499','Tijeras para Podar'),
+(155,146,146,'Ninguna',NULL,978.31,142833.26,103,11,'7506077328932','Calibrador Vernier'),
+(156,117,117,'Ninguna',NULL,300.11,35112.87,104,130,'750100000013','Guantes de Carnaza'),
+(157,49,49,'Ninguna',NULL,1658.74,81278.26,105,121,'7501272543150','Rodillo para Pintura 9\"'),
+(158,132,132,'Ninguna',NULL,2333.54,308027.28,106,120,'750100000012','Rotomartillo SDS Plus 800W'),
+(159,127,127,'Ninguna',NULL,120.85,15347.95,106,20,'750100000002','Lentes de Seguridad'),
+(160,116,NULL,'Ninguna',NULL,1795.31,208255.96,107,131,'7501786760942','Arena de Río (Bolsa 40kg)'),
+(161,119,NULL,'Ninguna',NULL,69.08,8220.52,107,101,'7503849721586','Yeso para Construcción 20kg'),
+(162,97,97,'Ninguna',NULL,1706.05,165486.85,108,144,'7507262424331','Grapa Galvanizada (Caja 1kg) (2)'),
+(163,110,110,'Ninguna',NULL,307.17,33788.70,108,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
+(164,127,127,'Ninguna',NULL,1177.63,149559.01,109,87,'7506487419902','Jalador para Piso'),
+(165,34,34,'Ninguna',NULL,1401.75,47659.50,110,27,'7506672781625','Pintura en Spray Negro Mate'),
+(166,53,NULL,'Ninguna',NULL,937.53,49689.09,111,40,'750100000004','Pegamento Epóxico'),
+(167,115,NULL,'Ninguna',NULL,325.55,37438.25,111,100,'750100000010','Botas de Seguridad con Casquillo'),
+(168,77,77,'Ninguna',NULL,1853.75,142738.75,112,31,'7504961331390','Manguera Flexible para WC'),
+(169,22,NULL,'Ninguna',NULL,2129.87,46857.14,113,112,'7506022147552','Thinner Estándar 1L'),
+(170,143,143,'Ninguna',NULL,1083.01,154870.43,114,52,'7505406266787','Apagador de Escalera'),
+(171,57,57,'Ninguna',NULL,2185.97,124600.29,114,21,'7508351627246','Foco LED 12W'),
+(172,77,77,'Ninguna',NULL,241.11,18565.47,114,60,'750100000006','Banda para Lijadora'),
+(173,28,NULL,'Ninguna',NULL,287.70,8055.60,115,41,'7509563414931','Martillo de Uña 16 oz'),
+(174,47,47,'Ninguna',NULL,2023.87,95121.89,116,90,'750100000009','Fertilizante Multiusos 1kg'),
+(175,40,40,'Ninguna',NULL,1557.23,62289.20,117,84,'7505525068415','Bisagra de Piso 3\"'),
+(176,11,11,'Ninguna',NULL,368.39,4052.29,118,129,'7505050795239','Block de Concreto 15x20x40'),
+(177,96,96,'Ninguna',NULL,1130.45,108523.20,118,2,'7502784537981','Foco Ahorrador Espiral 20W'),
+(178,133,NULL,'Ninguna',NULL,951.18,126506.94,119,3,'7503311595947','Desarmador de Cruz #2'),
+(179,144,144,'Ninguna',NULL,2190.20,315388.80,120,45,'7506529046749','Router para Madera'),
+(180,140,140,'Ninguna',NULL,387.89,54304.60,120,43,'7509353021300','Desarmador Plano 1/4x6\"'),
+(185,5,2,'Faltante','no llego',492.60,2463.00,124,150,'750100000015','Block de Concreto 15x20x40 (2)'),
+(186,3,3,'Ninguna',NULL,300.11,900.33,124,130,'750100000013','Guantes de Carnaza');
 /*!40000 ALTER TABLE `detalle_compras` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -660,7 +693,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_validar_compra
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_validar_compra
 BEFORE INSERT ON detalle_compras
 FOR EACH ROW
 BEGIN
@@ -703,7 +736,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_compra_aumenta_stock
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_compra_aumenta_stock
 AFTER INSERT ON detalle_compras
 FOR EACH ROW
 BEGIN
@@ -750,7 +783,7 @@ CREATE TABLE `detalle_ventas` (
   CONSTRAINT `chk_dventa_precio` CHECK (`Precio_Unitario` >= 0),
   CONSTRAINT `chk_dventa_descuento` CHECK (`Descuento` >= 0 and `Descuento` <= 100),
   CONSTRAINT `chk_dventa_subtotal` CHECK (`Subtotal` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=132 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=144 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -759,6 +792,7 @@ CREATE TABLE `detalle_ventas` (
 
 LOCK TABLES `detalle_ventas` WRITE;
 /*!40000 ALTER TABLE `detalle_ventas` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `detalle_ventas` VALUES
 (1,1,477.24,5.00,453.38,1,66,'7504549897138','Tubo PVC Hidráulico 3/4\" 6m'),
 (2,4,1209.73,5.00,4596.97,2,109,'7507048871061','Pija Galvanizada 1 1/2\" (Caja 100)'),
@@ -892,6 +926,7 @@ INSERT INTO `detalle_ventas` VALUES
 (130,6,388.07,0.00,2328.42,90,15,'7508007537041','Apagador Sencillo');
 /*!40000 ALTER TABLE `detalle_ventas` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -901,7 +936,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_validar_stock_venta
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_validar_stock_venta
 BEFORE INSERT ON detalle_ventas
 FOR EACH ROW
 BEGIN
@@ -949,7 +984,7 @@ DELIMITER ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_venta_disminuye_stock
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_venta_disminuye_stock
 AFTER INSERT ON detalle_ventas
 FOR EACH ROW
 BEGIN
@@ -991,7 +1026,7 @@ CREATE TABLE `empleados` (
   KEY `idx_empleados_nombre` (`Nombre`,`Apellidos`),
   CONSTRAINT `chk_emp_estado` CHECK (`Estado` in (0,1)),
   CONSTRAINT `chk_emp_nombre` CHECK (`Nombre` regexp '^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$' and `Apellidos` regexp '^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+$')
-) ENGINE=InnoDB AUTO_INCREMENT=147 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1000,6 +1035,7 @@ CREATE TABLE `empleados` (
 
 LOCK TABLES `empleados` WRITE;
 /*!40000 ALTER TABLE `empleados` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `empleados` VALUES
 (1,'Verónica','Hernández Pérez','TU_CORREO@gmail.com','9511445199','Gerente','2025-08-12',1),
 (2,'Perla','Chávez Morales','perla.chavez@ferredog.com','9511109031','Admin Sistema','2026-04-05',1),
@@ -1029,6 +1065,7 @@ INSERT INTO `empleados` VALUES
 (80,'Omar sss','Eli','hnerysa7744@gmail.com',NULL,'Vendedor','2026-10-13',0);
 /*!40000 ALTER TABLE `empleados` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `factura_cliente`
@@ -1056,6 +1093,7 @@ CREATE TABLE `factura_cliente` (
 
 LOCK TABLES `factura_cliente` WRITE;
 /*!40000 ALTER TABLE `factura_cliente` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `factura_cliente` VALUES
 (1,'2025-11-27',346.88,22814.88,48),
 (2,'2026-08-15',134.87,9677.84,66),
@@ -1089,6 +1127,7 @@ INSERT INTO `factura_cliente` VALUES
 (30,'2026-06-18',66.47,481.89,49);
 /*!40000 ALTER TABLE `factura_cliente` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `factura_proveedor`
@@ -1116,6 +1155,7 @@ CREATE TABLE `factura_proveedor` (
 
 LOCK TABLES `factura_proveedor` WRITE;
 /*!40000 ALTER TABLE `factura_proveedor` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `factura_proveedor` VALUES
 (1,'2026-09-04',60723.86,70439.68,1),
 (2,'2025-07-09',20684.46,23993.97,2),
@@ -1212,6 +1252,7 @@ INSERT INTO `factura_proveedor` VALUES
 (93,'2025-06-19',318701.21,369693.40,120);
 /*!40000 ALTER TABLE `factura_proveedor` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `inventario`
@@ -1231,7 +1272,7 @@ CREATE TABLE `inventario` (
   CONSTRAINT `inventario_ibfk_1` FOREIGN KEY (`Id_Producto`) REFERENCES `productos` (`Id_Producto`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `CONSTRAINT_1` CHECK (`Existencias` >= 0),
   CONSTRAINT `chk_inv_existencias` CHECK (`Existencias` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=540 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=839 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1240,6 +1281,7 @@ CREATE TABLE `inventario` (
 
 LOCK TABLES `inventario` WRITE;
 /*!40000 ALTER TABLE `inventario` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `inventario` VALUES
 (1,36,'2025-05-27',NULL,1),
 (2,30,'2025-10-02',NULL,2),
@@ -1328,7 +1370,7 @@ INSERT INTO `inventario` VALUES
 (85,50,'2026-01-17',NULL,127),
 (86,91,'2025-03-04',NULL,128),
 (87,48,'2025-03-20',NULL,129),
-(88,31,'2026-01-24','2026-02-05',130),
+(88,34,'2026-10-25','2026-02-05',130),
 (89,22,'2025-01-14',NULL,133),
 (90,11,'2025-07-17',NULL,134),
 (91,160,'2025-05-01',NULL,135),
@@ -1340,7 +1382,7 @@ INSERT INTO `inventario` VALUES
 (97,98,'2025-11-05','2026-06-25',145),
 (98,55,'2026-01-04','2026-03-20',147),
 (99,27,'2025-06-28',NULL,148),
-(100,4,'2025-10-01',NULL,150),
+(100,6,'2026-10-25',NULL,150),
 (201,32,'2026-10-12',NULL,151),
 (202,10,'2026-10-12',NULL,152),
 (293,666,'2026-10-13',NULL,243),
@@ -1350,6 +1392,7 @@ INSERT INTO `inventario` VALUES
 (539,34,'2026-10-25',NULL,489);
 /*!40000 ALTER TABLE `inventario` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `marcas`
@@ -1375,6 +1418,7 @@ CREATE TABLE `marcas` (
 
 LOCK TABLES `marcas` WRITE;
 /*!40000 ALTER TABLE `marcas` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `marcas` VALUES
 (1,'Truper',NULL,1),
 (2,'Pretul',NULL,1),
@@ -1388,6 +1432,7 @@ INSERT INTO `marcas` VALUES
 (10,'Foset',NULL,1);
 /*!40000 ALTER TABLE `marcas` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `metodo_pago`
@@ -1409,12 +1454,14 @@ CREATE TABLE `metodo_pago` (
 
 LOCK TABLES `metodo_pago` WRITE;
 /*!40000 ALTER TABLE `metodo_pago` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `metodo_pago` VALUES
 (1,'Efectivo'),
 (2,'Tarjeta'),
 (3,'Transferencia');
 /*!40000 ALTER TABLE `metodo_pago` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `movimiento_inventario`
@@ -1442,7 +1489,7 @@ CREATE TABLE `movimiento_inventario` (
   CONSTRAINT `movimiento_inventario_ibfk_1` FOREIGN KEY (`Id_Producto`) REFERENCES `productos` (`Id_Producto`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `movimiento_inventario_ibfk_2` FOREIGN KEY (`Id_Empleado`) REFERENCES `empleados` (`Id_Empleado`) ON UPDATE CASCADE,
   CONSTRAINT `chk_mov_cantidad` CHECK (`Cantidad` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=404 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=438 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1451,6 +1498,7 @@ CREATE TABLE `movimiento_inventario` (
 
 LOCK TABLES `movimiento_inventario` WRITE;
 /*!40000 ALTER TABLE `movimiento_inventario` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `movimiento_inventario` VALUES
 (1,'Entrada',54,3,57,'Ingreso por compra a proveedor','2025-11-21 20:46:52',75,'7509734999650','Silicón para Vidrio',20),
 (2,'Entrada',132,10,142,'Reabastecimiento por compra','2025-09-23 19:57:33',127,'7505378426603','Pulidora Orbital 6\"',7),
@@ -1851,9 +1899,12 @@ INSERT INTO `movimiento_inventario` VALUES
 (397,'Devolucion',4,10,14,'Devolución por garantía','2026-03-26 08:04:01',74,'7507406668819','Lija para Metal #80 (Caja 10)',4),
 (398,'Salida',14,63,49,'Venta en mostrador','2026-07-27 11:40:58',23,'7503484983995','Compresor de Aire 1HP',12),
 (399,'Entrada',115,65,180,'Ingreso por compra a proveedor','2026-09-05 13:13:12',67,'7501104989571','Brocha 3\"',4),
-(400,'Entrada',36,67,103,'Recepción de mercancía','2026-03-03 08:25:06',36,'7507683757414','Chapa para Puerta Interior',10);
+(400,'Entrada',36,67,103,'Recepción de mercancía','2026-03-03 08:25:06',36,'7507683757414','Chapa para Puerta Interior',10),
+(419,'Entrada',2,4,6,'Pedido #124 - Faltante: no llego','2026-10-25 22:58:16',150,'750100000015','Block de Concreto 15x20x40 (2)',67),
+(420,'Entrada',3,31,34,'Pedido #124','2026-10-25 22:58:16',130,'750100000013','Guantes de Carnaza',67);
 /*!40000 ALTER TABLE `movimiento_inventario` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `producto_promocion`
@@ -1878,59 +1929,61 @@ CREATE TABLE `producto_promocion` (
 
 LOCK TABLES `producto_promocion` WRITE;
 /*!40000 ALTER TABLE `producto_promocion` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `producto_promocion` VALUES
-(1,10),
-(2,11),
-(2,20),
-(3,13),
-(4,13),
 (8,1),
-(14,12),
-(16,19),
-(17,17),
-(19,10),
-(24,10),
-(26,8),
-(28,11),
-(31,9),
-(33,16),
-(34,14),
-(42,11),
-(44,15),
-(46,12),
-(55,16),
-(56,9),
-(56,12),
-(60,9),
-(66,10),
-(67,18),
-(68,5),
-(68,9),
-(75,4),
-(81,19),
-(90,5),
-(91,16),
-(93,8),
-(93,9),
-(95,19),
-(101,19),
-(102,17),
+(130,1),
 (104,2),
+(119,2),
+(123,3),
+(75,4),
+(68,5),
+(90,5),
+(140,5),
 (106,7),
 (113,7),
-(118,10),
-(119,2),
-(119,20),
-(123,3),
-(130,1),
 (130,7),
-(135,19),
-(139,18),
-(140,5),
 (140,7),
-(143,16);
+(26,8),
+(93,8),
+(31,9),
+(56,9),
+(60,9),
+(68,9),
+(93,9),
+(1,10),
+(19,10),
+(24,10),
+(66,10),
+(118,10),
+(2,11),
+(28,11),
+(42,11),
+(14,12),
+(46,12),
+(56,12),
+(3,13),
+(4,13),
+(34,14),
+(44,15),
+(33,16),
+(55,16),
+(91,16),
+(143,16),
+(17,17),
+(102,17),
+(67,18),
+(139,18),
+(16,19),
+(81,19),
+(95,19),
+(101,19),
+(135,19),
+(2,20),
+(119,20);
 /*!40000 ALTER TABLE `producto_promocion` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `productos`
@@ -1974,7 +2027,7 @@ CREATE TABLE `productos` (
   CONSTRAINT `chk_prod_texto` CHECK (trim(`Nombre`) <> ''),
   CONSTRAINT `chk_prod_stock` CHECK (`Stock_Minimo` >= 1),
   CONSTRAINT `chk_prod_estado` CHECK (`Estado` in (0,1))
-) ENGINE=InnoDB AUTO_INCREMENT=490 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=789 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1983,6 +2036,7 @@ CREATE TABLE `productos` (
 
 LOCK TABLES `productos` WRITE;
 /*!40000 ALTER TABLE `productos` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `productos` VALUES
 (1,'750100000000','Charola para Pintura','Charola para Pintura - Categoría 4',211.19,167.13,10,80,'2025-12-20',1,4,1,5,NULL),
 (2,'7502784537981','Foco Ahorrador Espiral 20W','Foco Ahorrador Espiral 20W - Categoría 14',1634.12,1130.45,5,40,'2025-04-22',1,14,1,4,NULL),
@@ -2143,6 +2197,7 @@ INSERT INTO `productos` VALUES
 (489,'75023311534621','Alexs',NULL,200.00,NULL,1,100,'2026-10-25',1,9,3,23,3);
 /*!40000 ALTER TABLE `productos` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `promociones`
@@ -2174,6 +2229,7 @@ CREATE TABLE `promociones` (
 
 LOCK TABLES `promociones` WRITE;
 /*!40000 ALTER TABLE `promociones` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `promociones` VALUES
 (1,'Descuento de Temporada Ferretera','Promoción especial: 15.26% de descuento por tiempo limitado',15.26,'2025-10-03','2025-11-16',0,11),
 (2,'Promo Herramientas Eléctricas','Promoción especial: 23.79% de descuento por tiempo limitado',23.79,'2025-01-29','2025-03-06',0,6),
@@ -2197,6 +2253,7 @@ INSERT INTO `promociones` VALUES
 (20,'Oferta Relámpago Ferretera','Promoción especial: 5.82% de descuento por tiempo limitado',5.82,'2026-05-21','2026-06-06',0,12);
 /*!40000 ALTER TABLE `promociones` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `proveedor`
@@ -2212,7 +2269,7 @@ CREATE TABLE `proveedor` (
   `Telefono` varchar(15) DEFAULT NULL,
   `Correo` varchar(50) DEFAULT NULL,
   `Direccion` varchar(200) DEFAULT NULL,
-  `RFC` varchar(10) DEFAULT NULL,
+  `RFC` varchar(13) DEFAULT NULL,
   `Tipo` varchar(100) DEFAULT NULL,
   `Estado` tinyint(1) DEFAULT 1,
   PRIMARY KEY (`Id_Proveedor`),
@@ -2222,7 +2279,7 @@ CREATE TABLE `proveedor` (
   CONSTRAINT `chk_prov_texto` CHECK (trim(`Nombre`) <> ''),
   CONSTRAINT `chk_prov_telefono` CHECK (`Telefono` regexp '^[0-9]{10}$'),
   CONSTRAINT `chk_prov_estado` CHECK (`Estado` in (0,1))
-) ENGINE=InnoDB AUTO_INCREMENT=114 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=277 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2231,6 +2288,7 @@ CREATE TABLE `proveedor` (
 
 LOCK TABLES `proveedor` WRITE;
 /*!40000 ALTER TABLE `proveedor` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `proveedor` VALUES
 (1,'Tornillos y Fijaciones del Sur','Nancy Jiménez Luna','9515537157','contacto@tornillos.com','Av. Juárez #36, Col. Centro, Oaxaca de Juárez, Oax.','ZOA374735','Nacional',1),
 (2,'Distribuidora Ferretera Oaxaca','Guadalupe Villanueva Ruiz','9511937991','contacto@distribuidora.com','Av. Constitución #980, Col. Centro, Oaxaca de Juárez, Oax.','BZN799162','Nacional',1),
@@ -2269,6 +2327,7 @@ INSERT INTO `proveedor` VALUES
 (83,'erahin2222','Jorge Hernandez','9516386310','hernandezcortesneryomar@gmail.com','jjj',NULL,'Fabricante',1);
 /*!40000 ALTER TABLE `proveedor` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `rol`
@@ -2292,12 +2351,14 @@ CREATE TABLE `rol` (
 
 LOCK TABLES `rol` WRITE;
 /*!40000 ALTER TABLE `rol` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `rol` VALUES
 (1,'Administrador','Configura el sistema, usuarios, productos, proveedores y pedidos'),
 (2,'Vendedor','Registra ventas y consulta productos'),
 (3,'Almacenista','Registra entradas/salidas de inventario y recibe mercancía');
 /*!40000 ALTER TABLE `rol` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `unidad_medida`
@@ -2320,6 +2381,7 @@ CREATE TABLE `unidad_medida` (
 
 LOCK TABLES `unidad_medida` WRITE;
 /*!40000 ALTER TABLE `unidad_medida` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `unidad_medida` VALUES
 (1,'Pieza','pz'),
 (2,'Metro','m'),
@@ -2337,6 +2399,7 @@ INSERT INTO `unidad_medida` VALUES
 (14,'Mililitro','ml');
 /*!40000 ALTER TABLE `unidad_medida` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `usuario`
@@ -2365,7 +2428,7 @@ CREATE TABLE `usuario` (
   CONSTRAINT `usuario_ibfk_1` FOREIGN KEY (`Id_Empleado`) REFERENCES `empleados` (`Id_Empleado`) ON UPDATE CASCADE,
   CONSTRAINT `chk_usuario_estado` CHECK (`Estado` in (0,1)),
   CONSTRAINT `chk_usuario_intentos` CHECK (`Intentos_Fallidos` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=147 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=279 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2374,6 +2437,7 @@ CREATE TABLE `usuario` (
 
 LOCK TABLES `usuario` WRITE;
 /*!40000 ALTER TABLE `usuario` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `usuario` VALUES
 (1,'Verónicahe','$2y$10$ZAjUnLvRgxRk.SeJftgGDODzgqhlHqTlzkV9gQFmfGlv8odnlJb7q','Administrador','2025-04-11 08:25:46',1,0,NULL,NULL,NULL,1),
 (2,'pchavez','$2y$10$ZAjUnLvRgxRk.SeJftgGDODzgqhlHqTlzkV9gQFmfGlv8odnlJb7q','Administrador','2026-05-04 16:58:54',1,0,NULL,NULL,NULL,2),
@@ -2403,6 +2467,7 @@ INSERT INTO `usuario` VALUES
 (80,'Eli','$2y$10$BoDV8g/l0u8ZU6fz6nlH..xj3p7bE8MMDT.UtDzFEWtex7Yg6dOSq','Vendedor','2026-10-13 20:34:43',1,0,NULL,NULL,NULL,80);
 /*!40000 ALTER TABLE `usuario` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 
 --
 -- Table structure for table `ventas`
@@ -2430,7 +2495,7 @@ CREATE TABLE `ventas` (
   CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`Id_Cliente`) REFERENCES `cliente` (`Id_Cliente`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `ventas_ibfk_3` FOREIGN KEY (`Id_Empleado`) REFERENCES `empleados` (`Id_Empleado`) ON UPDATE CASCADE,
   CONSTRAINT `CONSTRAINT_1` CHECK (`Total` >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=92 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2439,6 +2504,7 @@ CREATE TABLE `ventas` (
 
 LOCK TABLES `ventas` WRITE;
 /*!40000 ALTER TABLE `ventas` DISABLE KEYS */;
+set autocommit=0;
 INSERT INTO `ventas` VALUES
 (1,'2025-12-03','Venta rápida',453.38,'Completada',3,50,17),
 (2,'2025-08-03','Venta con factura',17440.58,'Completada',1,81,1),
@@ -2532,6 +2598,7 @@ INSERT INTO `ventas` VALUES
 (90,'2025-12-13','Venta de mostrador',5218.32,'Completada',3,60,7);
 /*!40000 ALTER TABLE `ventas` ENABLE KEYS */;
 UNLOCK TABLES;
+commit;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -2541,7 +2608,7 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/  /*!50003 TRIGGER trg_venta_cancelada
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER trg_venta_cancelada
 AFTER UPDATE ON ventas
 FOR EACH ROW
 BEGIN
@@ -2633,7 +2700,7 @@ SET character_set_client = @saved_cs_client;
 /*!50003 SET character_set_results = utf8mb4 */ ;
 /*!50003 SET collation_connection  = utf8mb4_general_ci */ ;
 DELIMITER ;;
-CREATE  PROCEDURE `sp_mover_inventario`(
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_mover_inventario`(
     IN p_producto INT,
     IN p_delta    INT,
     IN p_tipo     VARCHAR(20),
@@ -2688,7 +2755,7 @@ DELIMITER ;
 /*!50001 SET character_set_results     = utf8mb4 */;
 /*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013  SQL SECURITY DEFINER */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `vw_catalogo_productos` AS select `p`.`Id_Producto` AS `Id_Producto`,`p`.`Codigo_Barras` AS `Codigo`,`p`.`Nombre` AS `Producto`,`m`.`Nombre` AS `Marca`,`c`.`Id_Categoria` AS `Id_Categoria`,`c`.`Nombre` AS `Categoria`,`pr`.`Id_Proveedor` AS `Id_Proveedor`,`pr`.`Nombre` AS `Proveedor`,`um`.`Abreviatura` AS `Unidad`,`p`.`Precio_Venta` AS `Precio_Venta`,`p`.`Precio_Venta` is null AS `Sin_Precio`,case when `p`.`Estado` = 1 then 'Activo' else 'Inactivo' end AS `Estado`,coalesce(`i`.`Existencias`,0) AS `Stock`,`p`.`Stock_Minimo` AS `Stock_Minimo`,coalesce(`i`.`Existencias`,0) <= `p`.`Stock_Minimo` AS `Stock_Critico` from (((((`productos` `p` left join `marcas` `m` on(`m`.`Id_Marca` = `p`.`Id_Marca`)) left join `categoria` `c` on(`c`.`Id_Categoria` = `p`.`Id_Categoria`)) left join `proveedor` `pr` on(`pr`.`Id_Proveedor` = `p`.`Id_Proveedor`)) left join `unidad_medida` `um` on(`um`.`Id_Unidad` = `p`.`Id_Unidad`)) left join `inventario` `i` on(`i`.`Id_Producto` = `p`.`Id_Producto`)) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -2706,7 +2773,7 @@ DELIMITER ;
 /*!50001 SET character_set_results     = utf8mb4 */;
 /*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
-/*!50013  SQL SECURITY DEFINER */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
 /*!50001 VIEW `vw_usuarios` AS select `u`.`Id_Usuario` AS `Id_Usuario`,`e`.`Id_Empleado` AS `Id_Empleado`,concat(`e`.`Nombre`,' ',`e`.`Apellidos`) AS `Nombre_Completo`,`u`.`Usuario` AS `Usuario`,`e`.`Correo` AS `Correo`,`r`.`Id_Rol` AS `Id_Rol`,`u`.`Rol` AS `Rol`,case when `u`.`Estado` = 1 then 'Activo' else 'Inactivo' end AS `Estado` from ((`usuario` `u` join `empleados` `e` on(`e`.`Id_Empleado` = `u`.`Id_Empleado`)) left join `rol` `r` on(`r`.`Nombre` = `u`.`Rol`)) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
@@ -2719,6 +2786,6 @@ DELIMITER ;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+/*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-10-25 19:57:25
+-- Dump completed on 2026-10-26 19:34:29
