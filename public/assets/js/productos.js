@@ -96,6 +96,64 @@ window.onclick = function (event) {
 const formularioProducto = document.querySelector('.formulario-producto');
 const campoStockMinimo = document.getElementById('stock_minimo');
 const mensajeStockMinimo = document.getElementById('stock_minimo_error');
+const campoPrecioVenta = document.getElementById('precio_venta');
+const campoPrecioCompra = document.getElementById('precio_compra');
+const mensajePrecioCompra = document.getElementById('precio_compra_error');
+const avisoPrecioMenorCosto = document.getElementById('avisoPrecioMenorCosto');
+
+function actualizarAvisoPrecioMenorCosto() {
+    if (!campoPrecioVenta || !campoPrecioCompra || !avisoPrecioMenorCosto) {
+        return;
+    }
+
+    const precioVenta = campoPrecioVenta.value.trim();
+    const precioCompra = campoPrecioCompra.value.trim();
+    const mostrarAviso = precioVenta !== ''
+        && precioCompra !== ''
+        && Number.isFinite(Number(precioVenta))
+        && Number.isFinite(Number(precioCompra))
+        && Number(precioVenta) < Number(precioCompra);
+    avisoPrecioMenorCosto.hidden = !mostrarAviso;
+}
+
+if (campoPrecioCompra && mensajePrecioCompra) {
+    const validarPrecioCompra = () => {
+        const valor = campoPrecioCompra.value.trim();
+        let mensaje = '';
+        if (valor !== '' && Number(valor) < 0) {
+            mensaje = 'El precio de compra no puede ser negativo';
+        } else if (valor !== '' && !/^\d+(?:\.\d{1,2})?$/.test(valor)) {
+            mensaje = 'El precio de compra debe ser un número válido con máximo dos decimales.';
+        }
+
+        mensajePrecioCompra.textContent = mensaje;
+        mensajePrecioCompra.hidden = mensaje === '';
+        campoPrecioCompra.setAttribute('aria-invalid', mensaje === '' ? 'false' : 'true');
+        actualizarAvisoPrecioMenorCosto();
+
+        return mensaje === '';
+    };
+
+    campoPrecioCompra.addEventListener('input', validarPrecioCompra);
+    campoPrecioCompra.addEventListener('invalid', function (evento) {
+        evento.preventDefault();
+        validarPrecioCompra();
+    });
+
+    if (formularioProducto) {
+        formularioProducto.addEventListener('submit', function (evento) {
+            if (!validarPrecioCompra()) {
+                evento.preventDefault();
+                campoPrecioCompra.focus();
+            }
+        });
+    }
+}
+
+if (campoPrecioVenta) {
+    campoPrecioVenta.addEventListener('input', actualizarAvisoPrecioMenorCosto);
+}
+actualizarAvisoPrecioMenorCosto();
 
 if (formularioProducto && campoStockMinimo && mensajeStockMinimo) {
     const textoErrorStockMinimo = 'El stock mínimo debe ser un número entero mayor a 0.';

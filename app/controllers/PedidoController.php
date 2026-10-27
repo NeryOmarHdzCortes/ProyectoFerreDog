@@ -157,7 +157,7 @@ class PedidoController {
         unset($_SESSION['old'], $_SESSION['error'], $_SESSION['error_campos'], $_SESSION['mensaje_error']);
 
         $titulo = 'Nuevo pedido - Ferredog';
-        $scriptExtra = 'pedidos.js';
+        $scriptExtra = 'pedidos.js?v=' . filemtime(BASE_PATH . '/public/assets/js/pedidos.js');
 
         require_once BASE_PATH . '/app/views/layout/header.php';
         require_once BASE_PATH . '/app/views/layout/sidebar.php';
@@ -203,6 +203,7 @@ class PedidoController {
         $productosEnviados = is_array($_POST['productos'] ?? null) ? $_POST['productos'] : [];
         $proveedor = null;
         $productosValidos = [];
+        $productosDelProveedor = [];
         $errores = [];
 
         if ($idProveedor === null || $idProveedor <= 0
@@ -210,50 +211,21 @@ class PedidoController {
             $errores[] = 'Elige un proveedor';
         }
 
-        foreach ($productosEnviados as $idProductoEnviado => $datosProducto) {
-            if (!is_array($datosProducto)) {
-                $errores[] = 'Los datos de un producto no son válidos.';
-                continue;
-            }
-
-            $cantidadTexto = $this->obtenerTexto($datosProducto['cantidad'] ?? '');
-            if ($cantidadTexto === '') {
-                continue;
-            }
-
-            $idProducto = $this->obtenerEntero($idProductoEnviado);
-            $costoTexto = $this->obtenerTexto($datosProducto['costo'] ?? '');
-            $validacionDetalle = $this->modeloPedido->validarValoresDetalle(
-                $cantidadTexto,
-                $costoTexto
+        if ($proveedor) {
+            $productosDelProveedor = $this->modeloPedido->listarProductosActivosPorProveedor($idProveedor);
+            $productosDelProveedor = array_column($productosDelProveedor, null, 'Id_Producto');
+            $resultadoProductos = $this->modeloPedido->prepararProductosPedido(
+                $productosEnviados,
+                $productosDelProveedor
             );
-            $errores = array_merge($errores, $validacionDetalle['errores']);
-            if ($idProducto === null || $idProducto <= 0) {
-                $errores[] = 'El producto ya no pertenece a este proveedor o está inactivo.';
-                continue;
-            }
-
-            $productosValidos[$idProducto] = [
-                'cantidad' => $validacionDetalle['cantidad'],
-                'costo_centavos' => $validacionDetalle['costo_centavos']
-            ];
+            $productosValidos = $resultadoProductos['productos'];
+            $errores = array_merge($errores, $resultadoProductos['errores']);
         }
 
         $errores = array_merge(
             $errores,
             $this->modeloPedido->validarProductosPedido($productosValidos)
         );
-
-        if ($proveedor) {
-            $productosDelProveedor = $this->modeloPedido->listarProductosActivosPorProveedor($idProveedor);
-            $productosDelProveedor = array_column($productosDelProveedor, null, 'Id_Producto');
-            foreach ($productosValidos as $idProducto => $productoPedido) {
-                if (!isset($productosDelProveedor[$idProducto])) {
-                    $errores[] = 'El producto ya no pertenece a este proveedor o está inactivo.';
-                    unset($productosValidos[$idProducto]);
-                }
-            }
-        }
 
         if (!empty($errores)) {
             $this->redirigirConErroresPedido($idProveedor, $productosEnviados, $errores);
@@ -266,7 +238,6 @@ class PedidoController {
             $subtotalCentavos = $productoPedido['cantidad'] * $productoPedido['costo_centavos'];
             $totalCentavos += $subtotalCentavos;
             $productoPedido['subtotal_centavos'] = $subtotalCentavos;
-            $productoPedido['nombre'] = $productoCatalogo['Nombre'];
             $renglonesCorreo[] = [
                 'producto' => $productoCatalogo['Nombre'],
                 'cantidad' => $productoPedido['cantidad'],
@@ -373,9 +344,20 @@ class PedidoController {
     }
 
     private function obtenerDatosFormularioPedido($idProveedor, $productos) {
+        $cantidadesAnteriores = [];
+        foreach ($productos as $idProducto => $datosProducto) {
+            if (is_array($datosProducto)) {
+                $cantidadesAnteriores[$idProducto] = [
+                    'cantidad' => is_scalar($datosProducto['cantidad'] ?? null)
+                        ? (string) $datosProducto['cantidad']
+                        : ''
+                ];
+            }
+        }
+
         return [
             'proveedor_id' => $idProveedor ?? '',
-            'productos' => $productos
+            'productos' => $cantidadesAnteriores
         ];
     }
 

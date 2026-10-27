@@ -69,13 +69,10 @@ class PedidoTest extends TestCase
             });
         });
 
-        $this->probar('TEC-PED-04', 'Técnico', 'Rechazar cantidad cero, costo cero y pedido sin productos', function () {
+        $this->probar('TEC-PED-04', 'Técnico', 'Rechazar cantidad cero y pedido sin productos', function () {
             $this->enTransaccion(function () {
                 $validacionCantidad = $this->modelo->validarValoresDetalle('0', '5.00');
                 $this->assertTrue(in_array('La cantidad debe ser mayor a 0', $validacionCantidad['errores'], true));
-
-                $validacionCosto = $this->modelo->validarValoresDetalle('1', '0');
-                $this->assertTrue(in_array('El costo debe ser mayor a 0', $validacionCosto['errores'], true));
 
                 $this->assertEquals(
                     ['Agrega al menos un producto'],
@@ -364,6 +361,78 @@ class PedidoTest extends TestCase
                 $this->assertTrue(in_array($idsPendientes[0], $idsListaPendientes, true));
                 $this->assertFalse(in_array($idRecibido, $idsListaPendientes, true));
                 $this->assertTrue($this->modelo->contarPorRecibir() >= 11);
+            });
+        });
+
+        $this->probar('TEC-PED-16', 'Técnico', 'Ignorar un costo enviado y usar el precio del catálogo', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $producto = $this->crearProducto($proveedor['id']);
+                $guardarCosto = $this->pdo->prepare(
+                    'UPDATE productos SET Precio_Compra = ? WHERE Id_Producto = ?'
+                );
+                $guardarCosto->execute([12.50, $producto['id']]);
+                $productosCatalogo = array_column(
+                    $this->modelo->listarProductosActivosPorProveedor($proveedor['id']),
+                    null,
+                    'Id_Producto'
+                );
+
+                $resultado = $this->modelo->prepararProductosPedido(
+                    [
+                        $producto['id'] => [
+                            'cantidad' => '2',
+                            'costo' => '0.01'
+                        ]
+                    ],
+                    $productosCatalogo
+                );
+
+                $this->assertEquals([], $resultado['errores']);
+                $this->assertEquals(12.50, $resultado['productos'][$producto['id']]['costo_centavos'] / 100);
+            });
+        });
+
+        $this->probar('TEC-PED-17', 'Técnico', 'Rechazar productos sin precio de compra en catálogo', function () {
+            $this->enTransaccion(function () {
+                $proveedor = $this->crearProveedor();
+                $productoSinPrecio = $this->crearProducto($proveedor['id']);
+                $productoPrecioCero = $this->crearProducto($proveedor['id']);
+                $actualizarCosto = $this->pdo->prepare(
+                    'UPDATE productos SET Precio_Compra = ? WHERE Id_Producto = ?'
+                );
+                $actualizarCosto->execute([0, $productoPrecioCero['id']]);
+                $productosCatalogo = array_column(
+                    $this->modelo->listarProductosActivosPorProveedor($proveedor['id']),
+                    null,
+                    'Id_Producto'
+                );
+
+                $resultado = $this->modelo->prepararProductosPedido(
+                    [
+                        $productoSinPrecio['id'] => ['cantidad' => '1', 'costo' => '15.00'],
+                        $productoPrecioCero['id'] => ['cantidad' => '1', 'costo' => '15.00']
+                    ],
+                    $productosCatalogo
+                );
+
+                $this->assertEquals([], $resultado['productos']);
+                $this->assertTrue(
+                    in_array(
+                        'El producto ' . $productoSinPrecio['nombre']
+                            . ' no tiene precio de compra; asígnalo en Productos',
+                        $resultado['errores'],
+                        true
+                    )
+                );
+                $this->assertTrue(
+                    in_array(
+                        'El producto ' . $productoPrecioCero['nombre']
+                            . ' no tiene precio de compra; asígnalo en Productos',
+                        $resultado['errores'],
+                        true
+                    )
+                );
             });
         });
     }

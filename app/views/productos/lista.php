@@ -129,6 +129,9 @@
                                             <?php else: ?>
                                                 <span class="badge badge-amarillo">Sin precio</span>
                                             <?php endif; ?>
+                                            <?php if ($_SESSION['Rol'] === 'Administrador' && $producto['Precio_Compra'] === null): ?>
+                                                <span class="badge badge-amarillo">Sin costo</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td class="<?php echo $enStockMinimo ? 'texto-stock-minimo' : ''; ?>">
                                             <?php echo $producto['Existencias'] ?? 0; ?>

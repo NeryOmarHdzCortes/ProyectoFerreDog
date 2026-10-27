@@ -21,7 +21,8 @@ $definicionesPruebas = [
     'P-16' => 'Guardar sin proveedor → "Elige un proveedor" y no se crea nada',
     'P-17' => 'Sin productos → "Agrega al menos un producto"',
     'P-18' => 'Cantidad 0 → "La cantidad debe ser mayor a 0"',
-    'P-19' => 'Costo 0 → "El costo debe ser mayor a 0"',
+    'P-19' => 'El servidor ignora un costo falso y usa Precio_Compra del catálogo',
+    'P-20' => 'Un producto sin costo no se puede pedir',
     'P-21' => 'Cantidad que supera Stock_Maximo → mensaje de la base y no se crea nada',
     'P-22' => 'Pedido válido: mensaje "Pedido #N registrado…", Estado Pendiente, total recalculado por el servidor (manda un total falso y comprueba que se ignora) y Nombre_Producto/Nombre_Proveedor llenos por los triggers',
     'P-24' => 'correos.log tiene el correo del pedido con productos y total',
@@ -54,7 +55,7 @@ $definicionesPruebas = [
 ];
 
 $pruebasManualesPendientes = [
-    'P-03', 'P-14', 'P-15', 'P-20', 'P-23', 'P-26',
+    'P-03', 'P-14', 'P-15', 'P-23', 'P-26',
     'E-04', 'E-09', 'E-10', 'E-13', 'E-14', 'E-15', 'E-16', 'E-17'
 ];
 $resultadosPruebas = [];
@@ -502,7 +503,7 @@ try {
             $archivosCookies['Administrador'],
             '?c=pedido&a=guardar',
             'POST',
-            ['proveedor_id' => '', 'productos' => [$idsProductos[0] => ['cantidad' => '1', 'costo' => '5.00']]]
+            ['proveedor_id' => '', 'productos' => [$idsProductos[0] => ['cantidad' => '1']]]
         );
         $exigir(strpos($respuesta['cuerpo'], 'Elige un proveedor') !== false, 'No se mostró la validación del proveedor.');
         $exigir($contarPedidosProveedor() === $cantidadAntesInvalidos, 'Se creó un pedido sin proveedor.');
@@ -524,22 +525,79 @@ try {
             $archivosCookies['Administrador'],
             '?c=pedido&a=guardar',
             'POST',
-            ['proveedor_id' => $idProveedor, 'productos' => [$idsProductos[0] => ['cantidad' => '0', 'costo' => '5.00']]]
+            ['proveedor_id' => $idProveedor, 'productos' => [$idsProductos[0] => ['cantidad' => '0']]]
         );
         $exigir(strpos($respuesta['cuerpo'], 'La cantidad debe ser mayor a 0') !== false, 'No se mostró el error de cantidad.');
         $exigir($contarPedidosProveedor() === $cantidadAntesInvalidos, 'Se creó un pedido con cantidad cero.');
         return 'El POST fue rechazado y no insertó pedidos.';
     });
-    $prueba('P-19', function () use ($hacerPeticion, $archivosCookies, $idProveedor, $idsProductos, $contarPedidosProveedor, $cantidadAntesInvalidos, $exigir) {
-        $respuesta = $hacerPeticion(
-            $archivosCookies['Administrador'],
-            '?c=pedido&a=guardar',
-            'POST',
-            ['proveedor_id' => $idProveedor, 'productos' => [$idsProductos[0] => ['cantidad' => '1', 'costo' => '0']]]
+    $pedidoCostoFalso = null;
+    $prueba('P-19', function () use ($crearPedidoHttp, &$idsProductos, &$pdo, &$pedidoCostoFalso, $exigir) {
+        $pedidoCostoFalso = $crearPedidoHttp([
+            $idsProductos[0] => ['cantidad' => '1', 'costo' => '0.01']
+        ]);
+        $exigir($pedidoCostoFalso['id'] !== null, 'El pedido con costo manipulado no se guardó.');
+        $consulta = $pdo->prepare(
+            'SELECT c.Total, d.Precio_Unitario
+             FROM compras c
+             INNER JOIN detalle_compras d ON d.Id_Compras = c.Id_Compras
+             WHERE c.Id_Compras = ?'
         );
-        $exigir(strpos($respuesta['cuerpo'], 'El costo debe ser mayor a 0') !== false, 'No se mostró el error de costo.');
-        $exigir($contarPedidosProveedor() === $cantidadAntesInvalidos, 'Se creó un pedido con costo cero.');
-        return 'El POST fue rechazado y no insertó pedidos.';
+        $consulta->execute([$pedidoCostoFalso['id']]);
+        $fila = $consulta->fetch();
+        $exigir(
+            $fila && abs((float) $fila['Precio_Unitario'] - 5.00) < 0.001
+                && abs((float) $fila['Total'] - 5.00) < 0.001,
+            'El servidor no usó Precio_Compra del catálogo en el detalle y total.'
+        );
+        return 'El costo enviado (0.01) fue ignorado; se guardó el costo del catálogo ($5.00).';
+    });
+    $cantidadAntesInvalidos = $contarPedidosProveedor();
+
+    $prueba('P-20', function () use (
+        $hacerPeticion,
+        &$archivosCookies,
+        &$idProveedor,
+        &$idsProductos,
+        &$nombresProductos,
+        &$pdo,
+        &$cantidadAntesInvalidos,
+        $contarPedidosProveedor,
+        $exigir
+    ) {
+        $actualizarPrecio = $pdo->prepare(
+            'UPDATE productos SET Precio_Compra = NULL WHERE Id_Producto = ?'
+        );
+        $actualizarPrecio->execute([$idsProductos[0]]);
+        try {
+            $respuesta = $hacerPeticion(
+                $archivosCookies['Administrador'],
+                '?c=pedido&a=guardar',
+                'POST',
+                [
+                    'proveedor_id' => $idProveedor,
+                    'productos' => [$idsProductos[0] => ['cantidad' => '1', 'costo' => '5.00']]
+                ]
+            );
+            $exigir(
+                strpos(
+                    $respuesta['cuerpo'],
+                    'El producto ' . $nombresProductos[0]
+                        . ' no tiene precio de compra; asígnalo en Productos'
+                ) !== false,
+                'No se mostró el mensaje de producto sin costo.'
+            );
+            $exigir(
+                $contarPedidosProveedor() === $cantidadAntesInvalidos,
+                'Se creó un pedido para un producto sin costo.'
+            );
+        } finally {
+            $actualizarPrecio = $pdo->prepare(
+                'UPDATE productos SET Precio_Compra = 5.00 WHERE Id_Producto = ?'
+            );
+            $actualizarPrecio->execute([$idsProductos[0]]);
+        }
+        return 'El servidor rechazó el producto sin costo y no guardó el pedido.';
     });
     $prueba('P-21', function () use ($hacerPeticion, $archivosCookies, $idProveedor, $idsProductos, $contarPedidosProveedor, $cantidadAntesInvalidos, $exigir) {
         $respuesta = $hacerPeticion(
@@ -548,7 +606,7 @@ try {
             'POST',
             [
                 'proveedor_id' => $idProveedor,
-                'productos' => [$idsProductos[0] => ['cantidad' => '10001', 'costo' => '5.00']]
+                'productos' => [$idsProductos[0] => ['cantidad' => '10001']]
             ]
         );
         $exigir(
@@ -588,12 +646,12 @@ try {
         $compra = $consultaCompra->fetch();
         $exigir(
             $compra && $compra['Estado'] === 'Pendiente'
-                && abs((float) $compra['Total'] - 51.00) < 0.001
+                && abs((float) $compra['Total'] - 35.00) < 0.001
                 && $compra['Nombre_Proveedor'] === $nombreProveedor,
             'Estado, total recalculado o copia del proveedor incorrectos.'
         );
         $consultaDetalles = $pdo->prepare(
-            'SELECT Id_Producto, Nombre_Producto FROM detalle_compras WHERE Id_Compras = ?'
+            'SELECT Id_Producto, Nombre_Producto, Precio_Unitario FROM detalle_compras WHERE Id_Compras = ?'
         );
         $consultaDetalles->execute([$id]);
         $detalles = $consultaDetalles->fetchAll();
@@ -602,11 +660,12 @@ try {
             $exigir(
                 in_array((int) $detalle['Id_Producto'], array_slice($idsProductos, 0, 3), true)
                     && $detalle['Nombre_Producto'] !== null
-                    && $detalle['Nombre_Producto'] !== '',
+                    && $detalle['Nombre_Producto'] !== ''
+                    && abs((float) $detalle['Precio_Unitario'] - 5.00) < 0.001,
                 'El trigger no llenó Nombre_Producto en todos los detalles.'
             );
         }
-        return "Pedido #{$id}: Pendiente, total $51.00; el total falso fue ignorado y los triggers copiaron nombres.";
+        return "Pedido #{$id}: Pendiente, total $35.00; los costos manipulados se ignoraron y se usó el catálogo.";
     });
 
     $prueba('P-24', function () use ($exigir, &$tamanoLogOriginal, &$nombreProveedor, &$nombresProductos, &$pedidoPrincipal) {
@@ -617,7 +676,7 @@ try {
                 && strpos($contenidoNuevo, 'Pedido #' . $pedidoPrincipal['id']) !== false
                 && strpos($contenidoNuevo, $nombreProveedor) !== false
                 && strpos($contenidoNuevo, $nombresProductos[0]) !== false
-                && strpos($contenidoNuevo, 'Total: $51.00') !== false,
+                && strpos($contenidoNuevo, 'Total: $35.00') !== false,
             'El log no contiene correo de pedido, productos y total en los bytes nuevos.'
         );
         return 'El tramo nuevo del log contiene el pedido, sus productos y el total recalculado.';

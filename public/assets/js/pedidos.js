@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
         campo.name = nombre;
         campo.value = valor;
         campo.className = 'form-control';
-        campo.inputMode = nombre.endsWith('[costo]') ? 'decimal' : 'numeric';
+        campo.inputMode = 'numeric';
         campo.setAttribute('aria-label', etiqueta);
         if (min !== null) {
             campo.min = min;
@@ -107,20 +107,11 @@ document.addEventListener('DOMContentLoaded', function () {
         fila.appendChild(celdaStock);
 
         const idProducto = Number(producto.Id_Producto);
-        const costoInicial = datosAnteriores && datosAnteriores.costo !== undefined
-            ? String(datosAnteriores.costo)
-            : (producto.Precio_Compra === null ? '' : String(producto.Precio_Compra));
         const cantidadInicial = datosAnteriores && datosAnteriores.cantidad !== undefined
             ? String(datosAnteriores.cantidad)
             : '';
-        const costo = crearCampo(
-            'productos[' + idProducto + '][costo]',
-            'text',
-            costoInicial,
-            '0.01',
-            '0.01',
-            'Costo de ' + producto.Nombre
-        );
+        const precioCompra = Number(producto.Precio_Compra);
+        const tieneCosto = Number.isFinite(precioCompra) && precioCompra > 0;
         const cantidad = crearCampo(
             'productos[' + idProducto + '][cantidad]',
             'text',
@@ -129,13 +120,29 @@ document.addEventListener('DOMContentLoaded', function () {
             '1',
             'Cantidad de ' + producto.Nombre
         );
+        cantidad.campo.disabled = !tieneCosto;
+        if (!tieneCosto) {
+            cantidad.campo.value = '';
+        }
         const celdaCosto = document.createElement('td');
         const celdaCantidad = document.createElement('td');
         const celdaSubtotal = document.createElement('td');
         const salidaSubtotal = document.createElement('span');
         salidaSubtotal.dataset.subtotal = 'true';
         salidaSubtotal.textContent = '—';
-        celdaCosto.appendChild(costo.grupo);
+        fila.dataset.precioCompra = tieneCosto ? String(precioCompra) : '';
+        if (tieneCosto) {
+            celdaCosto.textContent = formatoMoneda.format(precioCompra);
+        } else {
+            const avisoSinCosto = document.createElement('small');
+            avisoSinCosto.className = 'badge badge-amarillo';
+            avisoSinCosto.textContent = 'Sin costo';
+            celdaCosto.appendChild(avisoSinCosto);
+            const avisoCantidad = document.createElement('small');
+            avisoCantidad.className = 'text-muted d-block mt-1';
+            avisoCantidad.textContent = 'Asigna el precio de compra en Productos';
+            celdaCantidad.appendChild(avisoCantidad);
+        }
         celdaCantidad.appendChild(cantidad.grupo);
         celdaSubtotal.appendChild(salidaSubtotal);
         fila.appendChild(celdaCosto);
@@ -169,13 +176,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tablaProductos.querySelectorAll('tr[data-producto-id]').forEach(function (fila) {
             const campoCantidad = fila.querySelector('[name$="[cantidad]"]');
-            const campoCosto = fila.querySelector('[name$="[costo]"]');
             const salidaSubtotal = fila.querySelector('[data-subtotal]');
             const cantidadTexto = campoCantidad.value.trim();
-            const costoTexto = campoCosto.value.trim();
 
             marcarError(campoCantidad, '');
-            marcarError(campoCosto, '');
             if (cantidadTexto === '') {
                 salidaSubtotal.textContent = '—';
                 return;
@@ -188,15 +192,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 valido = false;
             }
 
-            const costoValido = /^[0-9]+(?:\.[0-9]{1,2})?$/.test(costoTexto)
-                && Number(costoTexto) > 0;
-            if (!costoValido) {
-                marcarError(campoCosto, 'El costo debe ser mayor a 0');
-                valido = false;
-            }
-
-            if (cantidadValida && costoValido) {
-                const subtotal = Number(cantidadTexto) * Number(costoTexto);
+            const costoCatalogo = Number(fila.dataset.precioCompra);
+            if (cantidadValida && costoCatalogo > 0) {
+                const subtotal = Number(cantidadTexto) * costoCatalogo;
                 salidaSubtotal.textContent = formatoMoneda.format(subtotal);
                 total += subtotal;
             } else {
@@ -288,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let total = 0;
         tablaProductos.querySelectorAll('tr[data-producto-id]').forEach(function (fila) {
             const cantidad = Number(fila.querySelector('[name$="[cantidad]"]').value);
-            const costo = Number(fila.querySelector('[name$="[costo]"]').value);
+            const costo = Number(fila.dataset.precioCompra);
             const salidaSubtotal = fila.querySelector('[data-subtotal]');
             if (cantidad > 0 && costo > 0) {
                 const subtotal = cantidad * costo;
@@ -306,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     formulario.addEventListener('input', function (evento) {
-        if (evento.target.matches('[name$="[cantidad]"], [name$="[costo]"]')) {
+        if (evento.target.matches('[name$="[cantidad]"]')) {
             if (validacionIniciada) {
                 validarFormulario();
             } else {
