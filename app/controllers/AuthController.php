@@ -122,25 +122,26 @@ class AuthController {
                 if (empty($correo)) {
                     $error = 'Por favor ingresa tu correo electrónico.';
                 } else {
-                    // Buscar usuario por correo (solo activos)
+                    // Buscar usuario por correo solo si la cuenta está activa.
                     $usuario = $this->modeloUsuario->buscarPorCorreo($correo);
-                    
-                    // Siempre mostrar el mismo mensaje (seguridad)
-                    $exito = 'Si el correo está registrado, recibirás un código.';
-                    
-                    if ($usuario) {
+
+                    if (!$usuario) {
+                        unset($_SESSION['recuperacion_id'], $_SESSION['recuperacion_correo']);
+                        $error = 'Este correo no está registrado o la cuenta está inactiva';
+                        $paso = 1;
+                    } else {
                         // Generar código de 6 dígitos
                         $codigo = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-                        
+
                         // Guardar código hasheado en BD
                         $this->modeloUsuario->guardarCodigoRecuperacion($usuario['Id_Usuario'], $codigo);
-                        
+
                         // Enviar por correo
                         require_once BASE_PATH . '/app/libraries/Correo.php';
                         $servicioCorreo = new Correo();
                         $nombre = $usuario['Nombre'] . ' ' . $usuario['Apellidos'];
                         $resultado = $servicioCorreo->enviarCodigo($correo, $nombre, $codigo);
-                        
+
                         if ($resultado['exito']) {
                             $exito = $resultado['mensaje'];
                             // Guardar ID en sesión para el paso 2

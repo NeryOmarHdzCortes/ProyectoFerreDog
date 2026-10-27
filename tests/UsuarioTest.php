@@ -99,42 +99,50 @@ class UsuarioTest extends TestCase
             });
         });
 
-        $this->probar('HU1-05', 'HU-1', 'Correo en modo prueba registra el código', function () {
-            $rutaLog = BASE_PATH . '/storage/logs/correos.log';
-            $existia = file_exists($rutaLog);
-            $contenidoOriginal = $existia ? file_get_contents($rutaLog) : '';
+        $this->probar('HU1-05', 'HU-1', 'Correo inactivo no habilita recuperación y el correo activo sigue funcionando', function () {
+            $this->enTransaccion(function () {
+                $activo = $this->crearUsuario('Activo', 'Ferredog#2026');
+                $inactivo = $this->crearUsuario('Inactivo', 'Ferredog#2026');
 
-            if ($contenidoOriginal === false) {
-                throw new RuntimeException('No se pudo leer el log antes de la prueba.');
-            }
+                $this->assertNotNull($this->modelo->buscarPorCorreo($activo['correo']));
+                $this->assertFalse($this->modelo->buscarPorCorreo($inactivo['correo']));
 
-            $modoExistia = array_key_exists('MAIL_MODO', $_ENV);
-            $modoOriginal = $_ENV['MAIL_MODO'] ?? null;
-            $correo = 'TEST_' . $this->sufijoUnico() . '@example.invalid';
-            $codigo = (string) random_int(100000, 999999);
-            $_ENV['MAIL_MODO'] = 'prueba';
+                $rutaLog = BASE_PATH . '/storage/logs/correos.log';
+                $existia = file_exists($rutaLog);
+                $contenidoOriginal = $existia ? file_get_contents($rutaLog) : '';
 
-            try {
-                $resultado = (new Correo())->enviarCodigo($correo, 'TEST_Usuario', $codigo);
-                $contenido = file_get_contents($rutaLog);
-                $this->assertTrue($resultado['exito'] === true);
-                $this->assertTrue(strpos($contenido, $correo) !== false);
-                $this->assertTrue(strpos($contenido, $codigo) !== false);
-            } finally {
-                if ($modoExistia) {
-                    $_ENV['MAIL_MODO'] = $modoOriginal;
-                } else {
-                    unset($_ENV['MAIL_MODO']);
+                if ($contenidoOriginal === false) {
+                    throw new RuntimeException('No se pudo leer el log antes de la prueba.');
                 }
 
-                if ($existia) {
-                    if (file_put_contents($rutaLog, $contenidoOriginal, LOCK_EX) === false) {
-                        throw new RuntimeException('No se pudo restaurar el log de correo.');
+                $modoExistia = array_key_exists('MAIL_MODO', $_ENV);
+                $modoOriginal = $_ENV['MAIL_MODO'] ?? null;
+                $correo = 'TEST_' . $this->sufijoUnico() . '@example.invalid';
+                $codigo = (string) random_int(100000, 999999);
+                $_ENV['MAIL_MODO'] = 'prueba';
+
+                try {
+                    $resultado = (new Correo())->enviarCodigo($correo, 'TEST_Usuario', $codigo);
+                    $contenido = file_get_contents($rutaLog);
+                    $this->assertTrue($resultado['exito'] === true);
+                    $this->assertTrue(strpos($contenido, $correo) !== false);
+                    $this->assertTrue(strpos($contenido, $codigo) !== false);
+                } finally {
+                    if ($modoExistia) {
+                        $_ENV['MAIL_MODO'] = $modoOriginal;
+                    } else {
+                        unset($_ENV['MAIL_MODO']);
                     }
-                } elseif (file_exists($rutaLog) && !unlink($rutaLog)) {
-                    throw new RuntimeException('No se pudo retirar el log temporal de la prueba.');
+
+                    if ($existia) {
+                        if (file_put_contents($rutaLog, $contenidoOriginal, LOCK_EX) === false) {
+                            throw new RuntimeException('No se pudo restaurar el log de correo.');
+                        }
+                    } elseif (file_exists($rutaLog) && !unlink($rutaLog)) {
+                        throw new RuntimeException('No se pudo retirar el log temporal de la prueba.');
+                    }
                 }
-            }
+            });
         });
     }
 
