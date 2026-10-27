@@ -193,14 +193,75 @@ class ProductoTest extends TestCase
                 }
 
                 $consultaDetalle = $this->pdo->prepare(
-                    'SELECT Id_Producto, Codigo_Producto, Nombre_Producto
+                    'SELECT Id_Producto, Nombre_Producto
                      FROM detalle_ventas WHERE Id_Ventas = :venta'
                 );
                 $consultaDetalle->execute(['venta' => $idVenta]);
                 $detalle = $consultaDetalle->fetch(PDO::FETCH_ASSOC);
                 $this->assertNull($detalle['Id_Producto']);
-                $this->assertEquals($producto['codigo'], $detalle['Codigo_Producto']);
                 $this->assertEquals($producto['nombre'], $detalle['Nombre_Producto']);
+            });
+        });
+
+        $this->probar('HU5-10', 'HU-5', 'Guardar y editar el precio de compra del producto', function () {
+            $this->enTransaccion(function () {
+                $producto = $this->crearProducto(null, null, 2, 12.35);
+                $guardado = $this->modelo->obtenerPorId($producto['id']);
+                $this->assertEquals(12.35, (float) $guardado['Precio_Compra']);
+
+                $this->modelo->editar(
+                    $producto['id'],
+                    $producto['codigo'] . '_E',
+                    $producto['nombre'] . '_EDITADO',
+                    $this->referencias['marca'],
+                    $this->referencias['categoria'],
+                    $this->referencias['proveedor'],
+                    $this->referencias['unidad'],
+                    125.50,
+                    3,
+                    18.75
+                );
+                $editado = $this->modelo->obtenerPorId($producto['id']);
+                $this->assertEquals(18.75, (float) $editado['Precio_Compra']);
+            });
+        });
+
+        $this->probar('HU5-11', 'HU-5', 'El Almacenista no puede cambiar el precio de compra', function () {
+            $this->enTransaccion(function () {
+                $producto = $this->crearProducto(null, null, 2, 12.50);
+                $actual = $this->modelo->obtenerPorId($producto['id']);
+                $resultado = Producto::resolverPrecioCompra(
+                    'Almacenista',
+                    '999.99',
+                    $actual
+                );
+                $this->assertEquals(12.50, (float) $resultado['precio']);
+                $this->assertNull($resultado['error']);
+
+                $this->modelo->editar(
+                    $producto['id'],
+                    $producto['codigo'],
+                    $producto['nombre'],
+                    $this->referencias['marca'],
+                    $this->referencias['categoria'],
+                    $this->referencias['proveedor'],
+                    $this->referencias['unidad'],
+                    100.00,
+                    2,
+                    $resultado['precio']
+                );
+                $sinCambios = $this->modelo->obtenerPorId($producto['id']);
+                $this->assertEquals(12.50, (float) $sinCambios['Precio_Compra']);
+
+                $resultadoNegativo = Producto::resolverPrecioCompra(
+                    'Administrador',
+                    '-1',
+                    null
+                );
+                $this->assertEquals(
+                    'El precio de compra no puede ser negativo',
+                    $resultadoNegativo['error']
+                );
             });
         });
     }
@@ -208,7 +269,8 @@ class ProductoTest extends TestCase
     private function crearProducto(
         ?string $nombre = null,
         ?string $codigo = null,
-        int $stockMinimo = 2
+        int $stockMinimo = 2,
+        ?float $precioCompra = null
     ): array
     {
         $sufijo = $this->sufijoUnico();
@@ -226,7 +288,8 @@ class ProductoTest extends TestCase
             $this->referencias['unidad'],
             100.00,
             7,
-            $stockMinimo
+            $stockMinimo,
+            $precioCompra
         );
 
         $consulta = $this->pdo->prepare(

@@ -140,6 +140,28 @@ unset($_SESSION['datos_producto']);
                                    min="0"
                                    value="<?php echo htmlspecialchars($datosProducto['precio_venta'] ?? ($producto['Precio_Venta'] ?? '')); ?>">
                         </div>
+
+                        <div class="form-group">
+                            <label for="precio_compra">Precio de compra</label>
+                            <?php if ($_SESSION['Rol'] === 'Administrador'): ?>
+                                <input type="number"
+                                       id="precio_compra"
+                                       name="precio_compra"
+                                       class="form-control"
+                                       step="0.01"
+                                       min="0"
+                                       value="<?php echo htmlspecialchars($datosProducto['precio_compra'] ?? ($producto['Precio_Compra'] ?? '')); ?>"
+                                       aria-describedby="precio_compra_error">
+                                <small id="precio_compra_error" class="form-text text-danger" role="alert" hidden></small>
+                            <?php else: ?>
+                                <input type="number"
+                                       id="precio_compra"
+                                       class="form-control"
+                                       value="<?php echo htmlspecialchars($producto['Precio_Compra'] ?? ''); ?>"
+                                       disabled>
+                                <small class="form-text text-muted">Lo asigna el Administrador</small>
+                            <?php endif; ?>
+                        </div>
                         
                         <div class="form-group">
                             <label for="stock_inicial">Stock inicial *</label>
@@ -174,6 +196,9 @@ unset($_SESSION['datos_producto']);
                             <small id="stock_minimo_error" class="form-text text-danger" role="alert" hidden></small>
                             <small class="form-text text-muted">Si la existencia es igual o menor, el producto se marca en rojo</small>
                         </div>
+                    </div>
+                    <div id="avisoPrecioMenorCosto" class="alert alert-warning py-2 mt-3 mb-0" role="status" hidden>
+                        El precio de venta es menor que el costo
                     </div>
                 </div>
                 

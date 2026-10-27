@@ -293,20 +293,75 @@ class Pedido {
     }
 
     /**
-     * Valida los valores de cantidad y costo enviados para un renglón de pedido.
+     * Valida las cantidades y obtiene el costo exclusivamente del catálogo.
      */
-    public function validarValoresDetalle($cantidadTexto, $costoTexto) {
+    public function prepararProductosPedido(array $productosEnviados, array $productosCatalogo) {
+        $productosValidos = [];
+        $errores = [];
+
+        foreach ($productosEnviados as $idProductoEnviado => $datosProducto) {
+            if (!is_array($datosProducto)) {
+                $errores[] = 'Los datos de un producto no son válidos.';
+                continue;
+            }
+
+            $cantidadTexto = is_scalar($datosProducto['cantidad'] ?? null)
+                ? trim((string) $datosProducto['cantidad'])
+                : '';
+            if ($cantidadTexto === '') {
+                continue;
+            }
+
+            $idProducto = filter_var((string) $idProductoEnviado, FILTER_VALIDATE_INT);
+            if ($idProducto === false || $idProducto <= 0 || !isset($productosCatalogo[$idProducto])) {
+                $errores[] = 'El producto ya no pertenece a este proveedor o está inactivo.';
+                continue;
+            }
+
+            $productoCatalogo = $productosCatalogo[$idProducto];
+            $precioCompra = $productoCatalogo['Precio_Compra'] ?? null;
+            if ($precioCompra === null || !is_numeric($precioCompra)
+                || !is_finite((float) $precioCompra) || (float) $precioCompra <= 0) {
+                $errores[] = 'El producto ' . $productoCatalogo['Nombre']
+                    . ' no tiene precio de compra; asígnalo en Productos';
+                continue;
+            }
+
+            $costoCatalogo = number_format((float) $precioCompra, 2, '.', '');
+            $validacionDetalle = $this->validarValoresDetalle($cantidadTexto, $costoCatalogo);
+            $errores = array_merge($errores, $validacionDetalle['errores']);
+            if ($validacionDetalle['costo_centavos'] <= 0) {
+                $errores[] = 'El producto ' . $productoCatalogo['Nombre']
+                    . ' no tiene precio de compra; asígnalo en Productos';
+                continue;
+            }
+            if (!empty($validacionDetalle['errores'])) {
+                continue;
+            }
+
+            $productosValidos[$idProducto] = [
+                'cantidad' => $validacionDetalle['cantidad'],
+                'costo_centavos' => $validacionDetalle['costo_centavos']
+            ];
+        }
+
+        return [
+            'productos' => $productosValidos,
+            'errores' => $errores
+        ];
+    }
+
+    /**
+     * Valida la cantidad y el costo leído del catálogo para un renglón.
+     */
+    public function validarValoresDetalle($cantidadTexto, $costoCatalogo) {
         $errores = [];
         $cantidad = filter_var($cantidadTexto, FILTER_VALIDATE_INT);
         if ($cantidad === false || $cantidad <= 0) {
             $errores[] = 'La cantidad debe ser mayor a 0';
         }
 
-        $costoValido = preg_match('/^[0-9]+(?:\.[0-9]{1,2})?$/', (string) $costoTexto) === 1;
-        $costoCentavos = $costoValido ? $this->convertirACentavos((string) $costoTexto) : 0;
-        if (!$costoValido || $costoCentavos <= 0) {
-            $errores[] = 'El costo debe ser mayor a 0';
-        }
+        $costoCentavos = $this->convertirACentavos((string) $costoCatalogo);
 
         return [
             'cantidad' => $cantidad,

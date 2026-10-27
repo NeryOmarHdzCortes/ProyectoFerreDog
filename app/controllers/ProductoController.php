@@ -245,6 +245,16 @@ class ProductoController {
             $precioVenta = $productoActual['Precio_Venta'];
         }
 
+        $resultadoPrecioCompra = Producto::resolverPrecioCompra(
+            $_SESSION['Rol'],
+            $_POST['precio_compra'] ?? '',
+            $productoActual
+        );
+        $precioCompra = $resultadoPrecioCompra['precio'];
+        if ($resultadoPrecioCompra['error'] !== null) {
+            $errores[] = $resultadoPrecioCompra['error'];
+        }
+
         if (!empty($errores)) {
             $this->redirigirConErrores($errores, $idProducto);
         }
@@ -261,7 +271,8 @@ class ProductoController {
                     $idUnidad,
                     $precioVenta,
                     $stockInicial,
-                    $stockMinimo
+                    $stockMinimo,
+                    $precioCompra
                 );
                 $this->pdo->commit();
                 $_SESSION['mensaje_exito'] = 'Producto creado correctamente.';
@@ -275,7 +286,8 @@ class ProductoController {
                     $idProveedor,
                     $idUnidad,
                     $precioVenta,
-                    $stockMinimo
+                    $stockMinimo,
+                    $precioCompra
                 );
                 $_SESSION['mensaje_exito'] = 'Producto actualizado correctamente.';
             }
@@ -438,7 +450,7 @@ class ProductoController {
     private function redirigirConErrores($errores, $idProducto) {
         $_SESSION['errores'] = $errores;
         $_SESSION['datos_producto'] = [];
-        foreach (['codigo', 'nombre', 'marca', 'categoria', 'proveedor', 'unidad', 'precio_venta', 'stock_inicial', 'stock_minimo'] as $campo) {
+        foreach (['codigo', 'nombre', 'marca', 'categoria', 'proveedor', 'unidad', 'precio_venta', 'precio_compra', 'stock_inicial', 'stock_minimo'] as $campo) {
             if (isset($_POST[$campo]) && is_scalar($_POST[$campo])) {
                 $_SESSION['datos_producto'][$campo] = (string) $_POST[$campo];
             }

@@ -10,6 +10,40 @@ class Producto {
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
+
+    public static function resolverPrecioCompra($rol, $valorEnviado, $productoActual) {
+        $precioActual = is_array($productoActual)
+            ? ($productoActual['Precio_Compra'] ?? null)
+            : null;
+        if ($rol !== 'Administrador') {
+            return ['precio' => $precioActual, 'error' => null];
+        }
+
+        if (!is_scalar($valorEnviado)) {
+            return [
+                'precio' => null,
+                'error' => 'El precio de compra debe ser un número válido con máximo dos decimales.'
+            ];
+        }
+
+        $precioTexto = trim((string) $valorEnviado);
+        if ($precioTexto === '') {
+            return ['precio' => null, 'error' => null];
+        }
+
+        if (is_numeric($precioTexto) && is_finite((float) $precioTexto) && (float) $precioTexto < 0) {
+            return ['precio' => null, 'error' => 'El precio de compra no puede ser negativo'];
+        }
+        if (!preg_match('/^\d+(?:\.\d{1,2})?$/', $precioTexto)
+            || !is_finite((float) $precioTexto)) {
+            return [
+                'precio' => null,
+                'error' => 'El precio de compra debe ser un número válido con máximo dos decimales.'
+            ];
+        }
+
+        return ['precio' => (float) $precioTexto, 'error' => null];
+    }
     
     /**
      * Convertir estado numérico a texto
@@ -64,7 +98,7 @@ class Producto {
      * @return array Lista de productos con datos del JOIN
      */
     public function obtenerTodos($busqueda = '', $idCategoria = 0, $idProveedor = 0, $estado = 'Activo', $pagina = 1, $limite = 10) {
-        $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta,
+        $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta, p.Precio_Compra,
                        p.Stock_Minimo, p.Stock_Maximo,
                        m.Nombre AS Marca,
                        c.Nombre AS Categoria,
@@ -115,7 +149,7 @@ class Producto {
      * @return array|false Datos del producto o false si no existe
      */
     public function obtenerPorId($idProducto) {
-        $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta,
+        $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta, p.Precio_Compra,
                        p.Stock_Minimo, p.Stock_Maximo, p.Id_Categoria, p.Id_Unidad,
                        p.Id_Proveedor, p.Id_Marca,
                        COALESCE(i.Existencias, 0) AS Existencias,
@@ -152,12 +186,12 @@ class Producto {
      * Crear producto (transacción: productos + inventario)
      */
     public function crear($codigoBarras, $nombre, $idMarca, $idCategoria, $idProveedor, 
-                         $idUnidad, $precioVenta, $stockInicial, $stockMinimo) {
+                         $idUnidad, $precioVenta, $stockInicial, $stockMinimo, $precioCompra = null) {
         // 1. Insertar en productos
-        $sql = "INSERT INTO productos (Codigo_Barras, Nombre, Precio_Venta, Stock_Minimo, 
+        $sql = "INSERT INTO productos (Codigo_Barras, Nombre, Precio_Venta, Precio_Compra, Stock_Minimo,
                                        Fecha_Registro, Estado, Id_Categoria, 
                                        Id_Unidad, Id_Proveedor, Id_Marca)
-                VALUES (:codigo, :nombre, :precio, :stock_min, NOW(), 1, 
+                VALUES (:codigo, :nombre, :precio, :precio_compra, :stock_min, NOW(), 1,
                         :categoria, :unidad, :proveedor, :marca)";
         
         $stmt = $this->pdo->prepare($sql);
@@ -165,6 +199,7 @@ class Producto {
             'codigo' => $codigoBarras,
             'nombre' => $nombre,
             'precio' => $precioVenta, // NULL si no se proporciona
+            'precio_compra' => $precioCompra,
             'stock_min' => $stockMinimo,
             'categoria' => $idCategoria,
             'unidad' => $idUnidad,
@@ -189,11 +224,12 @@ class Producto {
      * Editar producto (actualiza productos y stock mínimo)
      */
     public function editar($idProducto, $codigoBarras, $nombre, $idMarca, $idCategoria, 
-                          $idProveedor, $idUnidad, $precioVenta, $stockMinimo) {
+                          $idProveedor, $idUnidad, $precioVenta, $stockMinimo, $precioCompra = null) {
         $sql = "UPDATE productos 
                 SET Codigo_Barras = :codigo,
                     Nombre = :nombre,
                     Precio_Venta = :precio,
+                    Precio_Compra = :precio_compra,
                     Stock_Minimo = :stock_min,
                     Id_Marca = :marca,
                     Id_Categoria = :categoria,
@@ -206,6 +242,7 @@ class Producto {
             'codigo' => $codigoBarras,
             'nombre' => $nombre,
             'precio' => $precioVenta,
+            'precio_compra' => $precioCompra,
             'stock_min' => $stockMinimo,
             'marca' => $idMarca,
             'categoria' => $idCategoria,
