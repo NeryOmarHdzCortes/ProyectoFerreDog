@@ -40,6 +40,7 @@
             <div>El pedido no existe o ya fue recibido. No se puede registrar la entrada.</div>
         </div>
     <?php elseif ($pedido): ?>
+        <?php $scriptExtra = 'entradas.js?v=' . filemtime(BASE_PATH . '/public/assets/js/entradas.js'); ?>
         <section class="seccion-card d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h2 class="subtitulo-seccion mb-1">
@@ -66,10 +67,19 @@
 
         <form id="formularioEntradaPedido" method="POST" action="/ProyectoFerredog/public/index.php?c=entrada&amp;a=registrar">
             <input type="hidden" name="id_compra" value="<?php echo (int) $pedido['Id_Compras']; ?>">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-2 flex-wrap">
+                <span id="contadorProductosRevisados" class="small text-secondary" aria-live="polite">
+                    0 de <?php echo count($detalles); ?> productos revisados
+                </span>
+            </div>
+            <div id="mensajeProductosPendientes" class="alert alert-warning" role="alert" hidden>
+                Revisa todos los productos: marca la palomita o reporta el faltante o daño
+            </div>
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
+                            <th scope="col">Confirmado</th>
                             <th scope="col">Producto</th>
                             <th scope="col">Marca</th>
                             <th scope="col">Cant. pedida</th>
@@ -89,6 +99,15 @@
                                     data-cantidad-pedida="<?php echo (int) $detalle['Cantidad']; ?>"
                                 <?php endif; ?>
                             >
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        data-confirmacion-producto
+                                        aria-label="Confirmar revisión de <?php echo htmlspecialchars($detalle['Producto'] ?? 'Producto', ENT_QUOTES, 'UTF-8'); ?>"
+                                        style="accent-color: #2563eb;"
+                                    >
+                                </td>
                                 <td>
                                     <?php echo htmlspecialchars($detalle['Producto'] ?? 'Producto', ENT_QUOTES, 'UTF-8'); ?>
                                     <?php if ($productoEliminado): ?>
@@ -116,7 +135,9 @@
             <div id="reportesEntradaOcultos"></div>
 
             <div class="d-flex justify-content-end mt-3">
-                <button type="submit" class="btn btn-success">Registrar entrada de mercancía</button>
+                <button type="submit" id="botonRegistrarEntrada" class="btn btn-secondary" disabled>
+                    Registrar entrada de mercancía
+                </button>
             </div>
         </form>
 

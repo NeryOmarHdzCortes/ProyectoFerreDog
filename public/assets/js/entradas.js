@@ -18,9 +18,112 @@ document.addEventListener('DOMContentLoaded', function () {
     const contenedorReportes = document.getElementById('reportesEntradaOcultos');
     const formularioEntrada = document.getElementById('formularioEntradaPedido');
     const idPedidoEntrada = formularioEntrada.querySelector('[name="id_compra"]').value;
+    const contadorProductosRevisados = document.getElementById('contadorProductosRevisados');
+    const mensajeProductosPendientes = document.getElementById('mensajeProductosPendientes');
+    const botonRegistrarEntrada = document.getElementById('botonRegistrarEntrada');
+    const filasProductos = Array.from(formularioEntrada.querySelectorAll('tbody tr'));
     let filaActiva = null;
+    let mostrarPendientes = false;
+
+    function pintarRenglon(fila) {
+        const confirmacion = fila.querySelector('[data-confirmacion-producto]');
+        const botonReporte = fila.querySelector('[data-abrir-reporte]');
+        const estado = fila.dataset.estado;
+
+        confirmacion.checked = estado === 'confirmado';
+        confirmacion.disabled = estado === 'reportado' || !fila.dataset.idDetalle;
+
+        if (botonReporte) {
+            const tieneReporte = estado === 'reportado';
+            botonReporte.textContent = tieneReporte ? 'Editar reporte' : 'Reportar';
+            botonReporte.disabled = estado === 'confirmado';
+            botonReporte.classList.toggle('btn-secondary', estado === 'confirmado');
+            botonReporte.classList.toggle('btn-cancelar-pedido', estado !== 'confirmado' && !tieneReporte);
+            botonReporte.classList.toggle('btn-outline-secondary', tieneReporte);
+        }
+
+        fila.classList.remove('table-primary', 'table-danger', 'table-warning');
+        if (estado === 'confirmado') {
+            fila.classList.add('table-primary');
+        } else if (estado === 'reportado') {
+            fila.classList.add('table-danger');
+        } else if (mostrarPendientes) {
+            fila.classList.add('table-warning');
+        }
+    }
+
+    function actualizarResumen() {
+        let productosRevisados = 0;
+
+        filasProductos.forEach(function (fila) {
+            if (fila.dataset.estado !== 'pendiente') {
+                productosRevisados++;
+            }
+        });
+
+        const todosRevisados = filasProductos.length > 0
+            && productosRevisados === filasProductos.length;
+        contadorProductosRevisados.textContent =
+            productosRevisados + ' de ' + filasProductos.length + ' productos revisados'
+            + (todosRevisados ? ' ✓' : '');
+        contadorProductosRevisados.classList.toggle('text-success', todosRevisados);
+        contadorProductosRevisados.classList.toggle('text-secondary', !todosRevisados);
+        contadorProductosRevisados.classList.toggle('fw-semibold', todosRevisados);
+        const hayPendientes = filasProductos.some(function (fila) {
+            return fila.dataset.estado === 'pendiente';
+        });
+        botonRegistrarEntrada.disabled = hayPendientes;
+        botonRegistrarEntrada.classList.toggle('btn-success', todosRevisados);
+        botonRegistrarEntrada.classList.toggle('btn-secondary', hayPendientes);
+        mensajeProductosPendientes.hidden = !mostrarPendientes || !hayPendientes;
+    }
+
+    filasProductos.forEach(function (fila) {
+        fila.dataset.estado = fila.dataset.idDetalle ? 'pendiente' : 'confirmado';
+        pintarRenglon(fila);
+
+        const confirmacion = fila.querySelector('[data-confirmacion-producto]');
+        confirmacion.addEventListener('change', function () {
+            if (fila.dataset.estado === 'reportado') {
+                pintarRenglon(fila);
+                actualizarResumen();
+                return;
+            }
+            fila.dataset.estado = confirmacion.checked ? 'confirmado' : 'pendiente';
+            pintarRenglon(fila);
+            actualizarResumen();
+        });
+
+        const botonReporte = fila.querySelector('[data-abrir-reporte]');
+        if (botonReporte) {
+            botonReporte.addEventListener('click', function (evento) {
+                if (fila.dataset.estado === 'confirmado') {
+                    evento.preventDefault();
+                    evento.stopImmediatePropagation();
+                    pintarRenglon(fila);
+                    actualizarResumen();
+                    return;
+                }
+                pintarRenglon(fila);
+                actualizarResumen();
+            });
+        }
+    });
+
+    actualizarResumen();
 
     formularioEntrada.addEventListener('submit', function (evento) {
+        const hayPendientes = filasProductos.some(function (fila) {
+            return fila.dataset.estado === 'pendiente';
+        });
+        if (hayPendientes) {
+            evento.preventDefault();
+            mostrarPendientes = true;
+            filasProductos.forEach(pintarRenglon);
+            actualizarResumen();
+            return;
+        }
+
         const confirmar = window.confirm(
             '¿Registrar la entrada del pedido #' + idPedidoEntrada
             + '? Las existencias se actualizarán con las cantidades recibidas.'
@@ -132,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function () {
         filaActiva.dataset.reporteCantidad = reporte.cantidad;
         filaActiva.dataset.reporteTipo = reporte.tipo;
         filaActiva.dataset.reporteMotivo = reporte.motivo;
-        filaActiva.classList.add('table-danger');
+        filaActiva.dataset.estado = 'reportado';
         filaActiva.querySelector('[data-cantidad-recibida]').textContent = reporte.cantidad;
 
         const observacion = filaActiva.querySelector('[data-observacion]');
@@ -141,11 +244,9 @@ document.addEventListener('DOMContentLoaded', function () {
         insignia.textContent = tipo + ': ' + faltantes;
         observacion.replaceChildren(insignia);
 
-        const botonReporte = filaActiva.querySelector('[data-abrir-reporte]');
-        botonReporte.textContent = 'Editar reporte';
-        botonReporte.classList.remove('btn-cancelar-pedido');
-        botonReporte.classList.add('btn-outline-secondary');
         actualizarCamposOcultos(filaActiva, reporte);
+        pintarRenglon(filaActiva);
+        actualizarResumen();
         modal.hide();
     }
 
@@ -163,15 +264,13 @@ document.addEventListener('DOMContentLoaded', function () {
         delete filaActiva.dataset.reporteCantidad;
         delete filaActiva.dataset.reporteTipo;
         delete filaActiva.dataset.reporteMotivo;
-        filaActiva.classList.remove('table-danger');
+        filaActiva.dataset.estado = 'pendiente';
         filaActiva.querySelector('[data-cantidad-recibida]').textContent =
             filaActiva.dataset.cantidadPedida;
         filaActiva.querySelector('[data-observacion]').textContent = '—';
 
-        const botonReporte = filaActiva.querySelector('[data-abrir-reporte]');
-        botonReporte.textContent = 'Reportar';
-        botonReporte.classList.remove('btn-outline-secondary');
-        botonReporte.classList.add('btn-cancelar-pedido');
+        pintarRenglon(filaActiva);
+        actualizarResumen();
         modal.hide();
     }
 
