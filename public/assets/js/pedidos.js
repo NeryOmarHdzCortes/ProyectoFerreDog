@@ -61,16 +61,31 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function validarLimiteCantidad(campoCantidad) {
+    function validarCampoCantidad(campoCantidad) {
         const fila = campoCantidad.closest('tr[data-producto-id]');
-        if (!fila || campoCantidad.disabled) {
+        if (!fila) {
             return true;
         }
 
         const cantidadTexto = campoCantidad.value.trim();
+        if (campoCantidad.disabled || cantidadTexto === '') {
+            marcarError(campoCantidad, '');
+            return true;
+        }
+
         const cantidadMaxima = Number(fila.dataset.puedePedirHasta);
-        const cantidadValida = /^[0-9]+$/.test(cantidadTexto) && Number(cantidadTexto) > 0;
-        if (cantidadValida && Number(cantidadTexto) > cantidadMaxima) {
+        if (!/^[0-9]+$/.test(cantidadTexto)) {
+            marcarError(campoCantidad, 'La cantidad debe ser un número entero');
+            return false;
+        }
+
+        const cantidad = Number(cantidadTexto);
+        if (cantidad <= 0) {
+            marcarError(campoCantidad, 'La cantidad debe ser mayor a 0');
+            return false;
+        }
+
+        if (cantidad > cantidadMaxima) {
             marcarError(
                 campoCantidad,
                 'Supera el stock máximo (puedes pedir hasta ' + cantidadMaxima + ')'
@@ -78,9 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return false;
         }
 
-        if (!validacionIniciada) {
-            marcarError(campoCantidad, '');
-        }
+        marcarError(campoCantidad, '');
         return true;
     }
 
@@ -215,37 +228,23 @@ document.addEventListener('DOMContentLoaded', function () {
         tablaProductos.querySelectorAll('tr[data-producto-id]').forEach(function (fila) {
             const campoCantidad = fila.querySelector('[name$="[cantidad]"]');
             const salidaSubtotal = fila.querySelector('[data-subtotal]');
-            const maximoPedido = Number(fila.dataset.puedePedirHasta);
             const cantidadTexto = campoCantidad.value.trim();
 
-            marcarError(campoCantidad, '');
-            if (cantidadTexto === '') {
-                marcarError(campoCantidad, 'La cantidad es obligatoria');
+            if (campoCantidad.disabled || cantidadTexto === '') {
+                marcarError(campoCantidad, '');
                 salidaSubtotal.textContent = '—';
-                valido = false;
                 return;
             }
 
             cantidadProductos++;
-            const cantidadValida = /^[0-9]+$/.test(cantidadTexto) && Number(cantidadTexto) > 0;
-            if (!cantidadValida) {
-                marcarError(
-                    campoCantidad,
-                    /^[0-9]+$/.test(cantidadTexto)
-                        ? 'La cantidad debe ser mayor a 0'
-                        : 'La cantidad debe ser un número entero'
-                );
+            if (!validarCampoCantidad(campoCantidad)) {
                 valido = false;
-            } else if (Number(cantidadTexto) > maximoPedido) {
-                marcarError(
-                    campoCantidad,
-                    'Supera el stock máximo (puedes pedir hasta ' + maximoPedido + ')'
-                );
-                valido = false;
+                salidaSubtotal.textContent = '—';
+                return;
             }
 
             const costoCatalogo = Number(fila.dataset.precioCompra);
-            if (cantidadValida && costoCatalogo > 0) {
+            if (costoCatalogo > 0) {
                 const subtotal = Number(cantidadTexto) * costoCatalogo;
                 salidaSubtotal.textContent = formatoMoneda.format(subtotal);
                 total += subtotal;
@@ -317,12 +316,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 fila.dataset.productoId = id;
                 tablaProductos.appendChild(fila);
             });
-            tablaProductos.querySelectorAll('[name$="[cantidad]"]').forEach(validarLimiteCantidad);
-            if (validacionIniciada) {
-                validarFormulario();
-            } else {
-                actualizarTotales();
-            }
+            actualizarTotales();
         } catch (error) {
             if (solicitudActual !== numeroSolicitud) {
                 return;
@@ -358,12 +352,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     formulario.addEventListener('input', function (evento) {
         if (evento.target.matches('[name$="[cantidad]"]')) {
-            validarLimiteCantidad(evento.target);
             if (validacionIniciada) {
                 validarFormulario();
             } else {
                 actualizarTotales();
             }
+        }
+    });
+
+    formulario.addEventListener('focusout', function (evento) {
+        if (evento.target.matches('[name$="[cantidad]"]')) {
+            validarCampoCantidad(evento.target);
         }
     });
 

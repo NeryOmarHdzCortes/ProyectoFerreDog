@@ -214,8 +214,34 @@ class PedidoController {
         if ($proveedor) {
             $productosDelProveedor = $this->modeloPedido->listarProductosActivosPorProveedor($idProveedor);
             $productosDelProveedor = array_column($productosDelProveedor, null, 'Id_Producto');
+            $productosParaValidar = [];
+            foreach ($productosEnviados as $idProductoEnviado => $datosProducto) {
+                if (!is_array($datosProducto)) {
+                    $productosParaValidar[$idProductoEnviado] = $datosProducto;
+                    continue;
+                }
+
+                $cantidadTexto = is_scalar($datosProducto['cantidad'] ?? null)
+                    ? trim((string) $datosProducto['cantidad'])
+                    : '';
+                if ($cantidadTexto === '') {
+                    continue;
+                }
+
+                $idProducto = filter_var((string) $idProductoEnviado, FILTER_VALIDATE_INT);
+                if ($idProducto !== false && isset($productosDelProveedor[$idProducto])) {
+                    $producto = $productosDelProveedor[$idProducto];
+                    $puedePedirHasta = (int) $producto['Stock_Maximo'] - (int) $producto['Existencias'];
+                    if ($puedePedirHasta <= 0) {
+                        continue;
+                    }
+                }
+
+                $productosParaValidar[$idProductoEnviado] = $datosProducto;
+            }
+
             $resultadoProductos = $this->modeloPedido->prepararProductosPedido(
-                $productosEnviados,
+                $productosParaValidar,
                 $productosDelProveedor
             );
             $productosValidos = $resultadoProductos['productos'];
