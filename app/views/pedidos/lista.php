@@ -1,4 +1,5 @@
 <?php
+$hayBusqueda = trim($busqueda) !== '';
 $clasesEstadoPedido = [
     'Pendiente' => 'badge-amarillo',
     'Recibida' => 'badge-verde',
@@ -65,6 +66,9 @@ $textosEstadoPedido = [
                     <button type="submit" class="btn btn-primary">Buscar</button>
                 </div>
             </div>
+            <?php if (!$hayBusqueda): ?>
+                <small class="form-text text-muted">Para cancelar un pedido, búscalo por su número o proveedor.</small>
+            <?php endif; ?>
         </form>
 
         <div class="table-responsive">
@@ -111,7 +115,7 @@ $textosEstadoPedido = [
                                             href="/ProyectoFerredog/public/index.php?c=pedido&amp;a=ver&amp;id=<?php echo $idPedido; ?>"
                                             class="btn btn-sm btn-outline-primary"
                                         >Ver</a>
-                                        <?php if ($estadoPedido === 'Pendiente'): ?>
+                                        <?php if ($hayBusqueda && $estadoPedido === 'Pendiente'): ?>
                                             <button
                                                 type="button"
                                                 class="btn btn-sm btn-cancelar-pedido"
