@@ -1,9 +1,10 @@
 ﻿# Archivos excluidos de Git
+
 .env
 vendor/
 *.log
 
-# Archivos de asistentes de IA
+# Archivos de asistentes de IA (no se suben)
 AGENTS.md
 .kiro/
 .github/copilot-instructions.md
@@ -13,3 +14,6 @@ docs/sprint1/task.md
 docs/sprint2/requirements.md
 docs/sprint2/design.md
 docs/sprint2/task.md
+docs/sprint3/requirements.md
+docs/sprint3/design.md
+docs/sprint3/task.md

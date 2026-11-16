@@ -1,0 +1,223 @@
+# Diseño del Sprint 3 — Ferredog
+
+El Sprint 3 se construye sobre los Sprints 1 y 2. Todo lo que dicen `docs/sprint1/design.md` y `docs/sprint2/design.md` (estilo visual, layout, enrutamiento, reglas de Estado, nomenclatura) **sigue vigente**. Aquí solo va lo nuevo.
+
+**La base de datos NO cambia en este sprint.** Todo lo necesario ya existe: `ventas`, `detalle_ventas`, `metodo_pago`, `inventario`, `movimiento_inventario` y los triggers de venta.
+
+## Wireframes (obligatorio seguirlos)
+Las pantallas están en `docs/sprint3/wireframes/`. Antes de crear cada vista, abre su imagen y respeta acomodo, campos, textos, columnas y colores de botones.
+
+| Wireframe | Imagen | Vista |
+|---|---|---|
+| W-16 Registrar venta | `W16_registrar_venta.png` | `app/views/ventas/registrar.php` |
+| W-17 Existencia insuficiente | `W17_existencia_insuficiente.png` | alerta dentro de `ventas/registrar.php` |
+| W-18 Pago insuficiente | `W18_pago_insuficiente.png` | alerta dentro de `ventas/registrar.php` |
+| W-19 Venta registrada y ticket | `W19_venta_registrada_ticket.png` | `app/views/ventas/ticket.php` |
+| W-20 Inicio con alerta de stock | `W20_inicio_alerta_stock.png` | botón en `layout/header.php` + recuadro en `dashboard/inicio.php` |
+| W-21 Alertas de stock bajo | `W21_alertas_stock_bajo.png` | `app/views/alertas/lista.php` |
+| W-22 Sin alertas de stock | `W22_sin_alertas.png` | estado vacío de `alertas/lista.php` |
+| W-23 Corte de caja | `W23_corte_caja.png` | `app/views/corte/index.php` |
+| W-24 Corte con diferencia | `W24_corte_diferencia.png` | resultado dentro de `corte/index.php` |
+| W-25 Corte impreso | `W25_corte_impreso.png` | `app/views/corte/imprimir.php` |
+
+Diagramas en `docs/sprint3/diagramas/` (el código sigue el flujo de los de secuencia):
+`HU2_secuencia_registrar_venta.png`, `HU8_secuencia_alerta_stock.png`, `HU9_secuencia_corte_caja.png`,
+casos de uso `HU2_casos_uso_registrar_venta.png`, `HU8_casos_uso_alerta_stock.png`, `HU9_casos_uso_corte_caja.png` y `diagrama_clases.png`.
+
+### Qué NO se construye de los wireframes
+- Los recuadros amarillos de notas ("Cómo funciona", "Reglas", "Botón con contador (se actualiza solo)"): son notas del diseñador. **Excepción:** en W-24 la nota "Diferencia = contado − esperado…" sí se muestra (es ayuda para el vendedor).
+- Los datos de ejemplo (Juan Pérez, Martillo de uña, V-0158, $473.00): todo sale de la base.
+
+### Diferencias con los wireframes (respetar esto)
+1. **Folio en W-16:** antes de registrar se muestra el folio provisional `V-` + (MAX(Id_Ventas)+1) con 4 dígitos. El folio real es el `Id_Ventas` que devuelve el INSERT y es el que va en W-19 y en el ticket.
+2. **Pago recibido y cambio:** la tabla `ventas` no tiene columnas para eso, así que **no se guardan** (igual que el efectivo contado del corte). Se muestran en W-19 y en el ticket impreso inmediatamente después de registrar (se pasan por `$_SESSION`). Si se vuelve a abrir el ticket después, sale sin esas dos líneas.
+3. **Menú del Administrador en W-20/W-21:** el wireframe muestra "Entradas"; se mantiene lo del Sprint 2 (el Administrador NO tiene Entradas). Solo se agrega "Alertas de stock".
+4. **Inicio del Administrador (W-20):** se conservan las tarjetas de conteos del Sprint 1 y se agrega arriba el recuadro rojo de alerta.
+
+## Menú lateral (actualiza la tabla del Sprint 2)
+Se mantienen los emojis actuales. Se quitan los "Sprint 3" deshabilitados.
+
+| Rol | Opciones |
+|---|---|
+| Administrador | 🏠 Inicio, 👥 Usuarios, 📦 Productos, 🏢 Proveedores, 📋 Pedidos, ⚠️ **Alertas de stock** |
+| Almacenista | 🏠 Inicio, 📦 Productos, 📥 Entradas (se quita "Alertas de stock · Sprint 3"; HU-8 es del Administrador) |
+| Vendedor | 🏠 Inicio, 💰 **Ventas**, 🧾 **Corte de caja** (como W-16/W-23; la búsqueda de Ventas ya muestra precio y existencia) |
+
+Activo por controlador: `venta` → Ventas, `corte` → Corte de caja, `alerta` → Alertas de stock.
+
+## Estilo de lo nuevo (tomado de los wireframes)
+- W-16: dos tarjetas blancas lado a lado (`col-lg-6`): izquierda "Buscar producto", derecha "Ticket en construcción". En pantallas chicas se apilan.
+- Botones: "Buscar producto" y "Agregar" azul `#2563eb`; "Registrar venta" verde `#16a34a`; "Cancelar venta" rojo `#dc2626`; "Imprimir ticket" gris `#9ca3af` (deshabilitado) / `#6b7280`.
+- "Total" en negritas grandes alineado a la derecha.
+- Alertas rojas (W-17, W-18): fondo `#fef2f2`, borde `#fecaca`, texto `#b91c1c`, con "⚠".
+- "Registrar venta" deshabilitado: verde claro con opacidad (W-18).
+- W-19: mensaje verde claro "✓ Venta V-#### registrada · Total $X · Método"; ticket en tarjeta blanca angosta (~300 px) con líneas punteadas, fuente monoespaciada opcional.
+- Botón de alertas (encabezado, a la izquierda del usuario): rojo `#dc2626` con contador en círculo blanco; con 0 → gris `#9ca3af`.
+- W-21: renglones con fondo rojo muy claro, existencia en rojo y negritas, insignia "Stock mínimo" roja clara, botón "Registrar pedido" con borde azul.
+- W-23: cuatro tarjetas (`col-md-3`); "Total del día" con borde oscuro. Montos grandes en negritas y "N ventas" pequeño gris.
+- W-24: resultado en recuadro rojo claro si es Faltante, verde claro si es Sobrante, gris si Cuadrado; "Faltante: −$50.00" en rojo y negritas.
+- Impresión: `@media print` oculta encabezado, menú, botones y todo menos `.ticket-impresion` / `.corte-impresion`.
+
+## Estructura (archivos nuevos o modificados)
+```
+app/
+├── controllers/
+│   ├── VentaController.php      HU-2: index (W-16), buscar (JSON), registrar (POST), ticket (W-19)
+│   ├── AlertaController.php     HU-8: lista (W-21/W-22), contar (JSON)
+│   ├── CorteController.php      HU-9: index (W-23/W-24), imprimir (W-25)
+│   └── InicioController.php     (mod) recuadro de alerta del Administrador
+├── models/
+│   ├── Venta.php                ventas + detalle_ventas + consultas del corte
+│   └── Producto.php             (mod) + buscarParaVenta(), listarStockBajo(); se reutiliza contarEnStockMinimo()
+├── views/
+│   ├── ventas/                  registrar.php, ticket.php
+│   ├── alertas/                 lista.php
+│   ├── corte/                   index.php, imprimir.php
+│   ├── layout/header.php        (mod) botón "Ver alertas de stock bajo" solo para Administrador
+│   ├── layout/sidebar.php       (mod) menú de la tabla de arriba
+│   ├── layout/footer.php        (mod) carga alertas-boton.js para el Administrador
+│   ├── dashboard/inicio.php     (mod) recuadro W-20
+│   └── pedidos/formulario.php   (mod) preselección desde la alerta
+public/assets/
+├── js/ventas.js                 búsqueda, ticket en memoria, validaciones, pago/cambio, confirmaciones
+├── js/corte.js                  calcular diferencia y abrir la impresión
+├── js/alertas-boton.js          refresca el contador cada 60 s
+├── js/imprimir.js               botón Imprimir → window.print()
+├── js/pedidos.js                (mod) resaltar el producto que viene de la alerta
+├── js/reglas.js                 (mod) + funciones puras del sprint (ver Pruebas)
+└── css/estilos.css              (mod) estilos de arriba + @media print
+tests/
+├── VentaTest.php                pruebas PHP del sprint (con rollBack)
+└── js/reglas.test.js            (mod) + pruebas Node del sprint
+```
+Rutas:
+- `?c=venta&a=index|buscar|registrar|ticket` — solo **Vendedor**
+- `?c=corte&a=index|imprimir` — solo **Vendedor**
+- `?c=alerta&a=lista|contar` — solo **Administrador**
+- `?c=pedido&a=nuevo&proveedor=ID&producto=ID` — (ya existe, Administrador)
+
+## Datos (estructura REAL, ya creada; NO crear ni alterar tablas)
+
+### `ventas`
+Id_Ventas (folio), Fecha (DATE, default hoy), Descripcion (varchar 100), Total (≥ 0), Estado ENUM('Completada','Cancelada','Pendiente') default 'Completada', Id_Metodo_Pago (NOT NULL), Id_Cliente (NULL = venta de mostrador), Id_Empleado (NOT NULL, el vendedor).
+
+### `detalle_ventas`
+Id_Detalle, Cantidad (> 0), Precio_Unitario (≥ 0), Descuento (0–100, usar 0), Subtotal (≥ 0), Id_Ventas, Id_Producto (NULL si se eliminó), Nombre_Producto (copia que llena el trigger).
+
+### `metodo_pago`
+1 Efectivo, 2 Tarjeta, 3 Transferencia. Leer de la tabla (no escribir los ids a mano en la vista).
+
+### Empleado de la sesión
+`$_SESSION['Id_Usuario']` → `SELECT Id_Empleado FROM usuario WHERE Id_Usuario = ?` (igual que en el Sprint 2). Nombre del vendedor: `$_SESSION['Nombre']`.
+
+## Lo que hace la base sola (triggers ya instalados; NO duplicar en PHP)
+| Trigger | Cuándo | Qué hace |
+|---|---|---|
+| `trg_validar_stock_venta` | BEFORE INSERT en detalle_ventas | Rechaza producto inexistente/inactivo, sin precio, o con `Cantidad > Existencias` ("Stock insuficiente…"); llena `Nombre_Producto` |
+| `trg_venta_disminuye_stock` | AFTER INSERT en detalle_ventas | Si la venta no está Cancelada: resta existencias y guarda movimiento `Salida` con motivo `Venta #N`, `Stock_Antes` y `Stock_Despues` |
+| `trg_venta_cancelada` | AFTER UPDATE de ventas a 'Cancelada' | Regresa existencias (movimiento `Devolucion`). No se usa en este sprint |
+
+- **PHP NUNCA** actualiza `inventario` ni inserta en `movimiento_inventario`.
+- Errores de trigger: `PDOException` SQLSTATE `45000` → rollBack y mostrar `errorInfo[2]`.
+
+## Reglas de lógica
+
+### HU-2 T2 Buscar y ticket
+- `buscar` (GET, JSON, `q` de 1 a 100 caracteres):
+  ```sql
+  SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta,
+         COALESCE(i.Existencias, 0) AS Existencias
+  FROM productos p
+  LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto
+  WHERE p.Estado = 1 AND p.Precio_Venta IS NOT NULL
+    AND (p.Nombre LIKE ? OR p.Codigo_Barras LIKE ?)
+  ORDER BY p.Nombre
+  LIMIT 20
+  ```
+  (`%texto%` en ambos parámetros). Respuesta: `{ "productos": [...] }` o `{ "error": "..." }`.
+- El ticket vive **en memoria del navegador** (`ventas.js`, arreglo de renglones `{idProducto, codigo, nombre, precio, existencias, cantidad}`) hasta pulsar "Registrar venta".
+- Funciones puras en `reglas.js`: `subtotal`, `total` (ya existen), `puedeAgregar(cantidadNueva, cantidadEnTicket, existencias)`, `cambio(pago, total)`, `faltaPorPagar(pago, total)`.
+- Redondeo a 2 decimales en todos los montos.
+
+### HU-2 T3 Existencias, pago y cambio
+- Al agregar: si `!puedeAgregar(...)` → alerta W-17 debajo de la tabla de búsqueda; se borra al siguiente intento correcto.
+- Combo de método de pago desde `metodo_pago`. Al elegir Tarjeta/Transferencia: pago = total, `readonly`. Efectivo: editable, solo números (`reglas.limpiarDecimal`).
+- Cada cambio del ticket o del pago recalcula cambio y estado del botón:
+  - ticket vacío → "Registrar venta" deshabilitado;
+  - pago < total → alerta W-18 con lo que falta y botón deshabilitado; Cambio muestra "—";
+  - pago ≥ total → Cambio = pago − total, botón habilitado.
+- "Cancelar venta": `confirm` propio de Bootstrap (modal) "¿Cancelar la venta? Se descartarán los productos del ticket." → vacía el ticket y el pago. No hace petición al servidor.
+
+### HU-2 T4 Registrar venta (POST `?c=venta&a=registrar`)
+- El navegador envía: `metodo` (Id_Metodo_Pago), `pago`, y por renglón `productos[i][id]`, `productos[i][cantidad]`. **No** envía precios ni totales que se usen.
+- Antes de enviar, modal de confirmación: "¿Registrar la venta por $X?".
+- El controlador valida otra vez:
+  - al menos un renglón; ids enteros > 0; cantidades enteras > 0; agrupa renglones repetidos del mismo producto;
+  - método de pago existe en `metodo_pago`;
+  - lee de la base `Precio_Venta`, `Estado` y existencias de cada producto (activo, con precio, cantidad ≤ existencias); si algo falla regresa a W-16 con el mensaje;
+  - **recalcula** subtotales y total con los precios de la base;
+  - pago numérico ≥ total (en Tarjeta/Transferencia se toma pago = total).
+- En UNA transacción:
+  1. `INSERT INTO ventas (Fecha, Descripcion, Total, Estado, Id_Metodo_Pago, Id_Cliente, Id_Empleado) VALUES (CURDATE(), 'Venta de mostrador', ?, 'Completada', ?, NULL, ?)`
+  2. Por renglón: `INSERT INTO detalle_ventas (Cantidad, Precio_Unitario, Descuento, Subtotal, Id_Ventas, Id_Producto) VALUES (?, ?, 0, ?, ?, ?)`
+  3. commit. Error de trigger/CHECK → rollBack y regresar a W-16 con el mensaje.
+- Después del commit: guardar en `$_SESSION['venta_pago'][$id] = ['pago'=>..,'cambio'=>..]` y redirigir a `?c=venta&a=ticket&id=N` (patrón POST-redirect-GET).
+
+### HU-2 T4 Ticket / Venta registrada (W-19)
+- `ticket` (GET `id`): solo ventas del vendedor de la sesión (`WHERE Id_Ventas = ? AND Id_Empleado = ?`); si no, regresar a Ventas.
+- Encabezado: `SELECT v.Id_Ventas, v.Fecha, v.Total, v.Estado, mp.Nombre AS Metodo FROM ventas v JOIN metodo_pago mp ON mp.Id_Metodo_Pago = v.Id_Metodo_Pago WHERE ...`
+- Renglones: `SELECT d.Cantidad, d.Precio_Unitario, d.Subtotal, COALESCE(p.Nombre, d.Nombre_Producto) AS Producto FROM detalle_ventas d LEFT JOIN productos p ON p.Id_Producto = d.Id_Producto WHERE d.Id_Ventas = ?`
+- "Existencias actualizadas": `SELECT Nombre_Producto, Stock_Antes, Stock_Despues FROM movimiento_inventario WHERE Tipo = 'Salida' AND Motivo = CONCAT('Venta #', ?) ORDER BY Id_Movimiento` → "Producto: antes → **después**".
+- Pago y cambio: se leen de `$_SESSION['venta_pago'][$id]` y se borran de la sesión al mostrar la página (la página ya los tiene para imprimir). Si no existen, el ticket sale sin esas dos líneas.
+- Folio en pantalla: `'V-' . str_pad($id, 4, '0', STR_PAD_LEFT)`. Fecha `d/m/Y`.
+- "Imprimir ticket" (`imprimir.js`) → `window.print()`; "Nueva venta" → `?c=venta&a=index`.
+
+### HU-8 Alertas
+- Lista (modelo `Producto::listarStockBajo()`):
+  ```sql
+  SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, COALESCE(i.Existencias, 0) AS Existencias,
+         p.Stock_Minimo, p.Id_Proveedor, pr.Nombre AS Proveedor
+  FROM productos p
+  LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto
+  LEFT JOIN proveedor pr ON pr.Id_Proveedor = p.Id_Proveedor
+  WHERE p.Estado = 1 AND COALESCE(i.Existencias, 0) <= p.Stock_Minimo
+  ORDER BY (COALESCE(i.Existencias, 0) - p.Stock_Minimo), p.Nombre
+  ```
+  Proveedor NULL → "Sin proveedor" y botón deshabilitado. Código NULL → "—".
+- Contador: reutilizar `Producto::contarEnStockMinimo()` (misma condición). `contar` responde `{ "total": N }`.
+- `header.php`: si el rol es Administrador, obtiene el conteo (try/catch; si falla muestra 0) y pinta el botón con `data-url` para `alertas-boton.js`.
+- "Registrar pedido": enlace a `?c=pedido&a=nuevo&proveedor={Id_Proveedor}&producto={Id_Producto}`.
+- `PedidoController::nuevo()`: si llega `proveedor` (entero de un proveedor activo) lo deja seleccionado y pasa `producto` a la vista en `data-producto-resaltar`; `pedidos.js`, al terminar de cargar los productos, resalta ese renglón (`table-warning`), hace scroll y pone el foco en su cantidad. No llena la cantidad: el administrador la escribe.
+
+### HU-9 Corte de caja
+- Por método (incluye métodos sin ventas):
+  ```sql
+  SELECT mp.Id_Metodo_Pago, mp.Nombre,
+         COUNT(v.Id_Ventas) AS Ventas, COALESCE(SUM(v.Total), 0) AS Total
+  FROM metodo_pago mp
+  LEFT JOIN ventas v ON v.Id_Metodo_Pago = mp.Id_Metodo_Pago
+       AND v.Fecha = CURDATE() AND v.Id_Empleado = ? AND v.Estado = 'Completada'
+  GROUP BY mp.Id_Metodo_Pago, mp.Nombre
+  ORDER BY mp.Id_Metodo_Pago
+  ```
+- Canceladas: `SELECT COUNT(*), COALESCE(SUM(Total),0) FROM ventas WHERE Fecha = CURDATE() AND Id_Empleado = ? AND Estado = 'Cancelada'`.
+- Total del día = suma de las tres tarjetas. Las 'Pendiente' no cuentan.
+- Fecha larga en español con `IntlDateFormatter` si existe; si no, arreglos de días y meses en español.
+- `corte.js`: valida el campo (`reglas.limpiarDecimal`), usa `reglas.diferenciaCorte(contado, esperado)` → `{tipo: 'Sobrante'|'Faltante'|'Cuadrado', monto}` y muestra el resultado y el botón "Imprimir corte".
+- `imprimir` (GET `contado`): el controlador valida `contado` (número ≥ 0, 2 decimales; si no, regresa al corte), **recalcula** el corte desde la base y muestra W-25. Nada se guarda.
+
+## Pruebas
+
+### PHP — `tests/VentaTest.php` (suite `tests\run.php`, transacción + `rollBack()` en `finally`)
+1. Buscar no devuelve productos inactivos ni sin precio.
+2. Registrar venta válida: crea `ventas` (Completada, empleado, método) y `detalle_ventas`; existencia baja; hay movimiento `Salida` "Venta #N".
+3. Cantidad mayor a la existencia → el trigger la rechaza y no queda venta.
+4. El controlador recalcula el total con `Precio_Venta` aunque el navegador mande otro precio.
+5. Pago menor al total → rechazada.
+6. Alertas: un producto con existencia = stock mínimo aparece; con existencia mínimo + 1 no aparece; inactivo no aparece.
+7. Corte: suma por método solo Completadas de hoy del vendedor; canceladas aparte; otro vendedor no se mezcla.
+8. Permisos: Almacenista no entra a venta/corte; Vendedor no entra a alerta.
+Resultado en `docs/sprint3/pruebas_unitarias.md`.
+
+### JS — `tests/js/reglas.test.js` (`node --test tests/js/reglas.test.js`)
+Agregar pruebas de: `puedeAgregar` (igual a existencia sí, mayor no, sumando lo del ticket), `cambio` (500 − 473 = 27; redondeo), `faltaPorPagar`, `diferenciaCorte` (3400 vs 3450 → Faltante 50; 3500 → Sobrante 50; igual → Cuadrado 0). Las pruebas anteriores deben seguir pasando.

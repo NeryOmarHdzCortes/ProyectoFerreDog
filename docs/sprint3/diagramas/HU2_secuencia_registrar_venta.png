@@ -1,0 +1,37 @@
+# Tareas del Sprint 3 — Ferredog
+
+Las tareas siguen el Sprint Backlog (HU y número de tarea).
+Reglas: cada vista sigue su wireframe de `docs/sprint3/wireframes/` (tabla en design.md) y su diagrama de `docs/sprint3/diagramas/`. Hacer **una tarea a la vez**, decir qué archivos se crearon o modificaron y cómo probarla, y esperar "confirmado" antes de hacer commit y pasar a la siguiente.
+
+## 0. Base de datos — NO hay cambios en este sprint
+- [x] 0.1 `ventas`, `detalle_ventas`, `metodo_pago` ya existen
+- [x] 0.2 Triggers `trg_validar_stock_venta` y `trg_venta_disminuye_stock` ya validan y descuentan existencias
+- [x] 0.3 El agente NO ejecuta CREATE / ALTER / DROP / triggers
+
+## HU-2 — Registrar venta (Vendedor)
+- [ ] **HU-2 T1** Interfaz de venta: menú del Vendedor (Ventas y Corte de caja), `VentaController::index`, vista `ventas/registrar.php` (W-16) con panel de búsqueda a la izquierda y ticket en construcción a la derecha, combo de métodos de pago, botones con sus colores, folio provisional y estilos nuevos en `estilos.css`. Sin lógica todavía.
+- [ ] **HU-2 T2** Búsqueda y cálculo: acción `buscar` (JSON) y `Producto::buscarParaVenta()`; en `ventas.js` mostrar resultados, agregar al ticket (sumando si se repite), quitar renglón, subtotales y total; funciones nuevas en `reglas.js`. (Req. 15 y 16)
+- [ ] **HU-2 T3** Validación de existencias, pago y cambio: alerta W-17, método de pago (Tarjeta/Transferencia = total), cambio, alerta W-18 y botón deshabilitado; "Cancelar venta" con confirmación que descarta el ticket. (Req. 17, 18 y 21)
+- [ ] **HU-2 T4** Registro e impresión: acción `registrar` (validación en el controlador, precios desde la base, transacción), modelo `Venta.php`, vista `ventas/ticket.php` (W-19) con existencias antes → después, ticket, `imprimir.js` y `@media print`. (Req. 19 y 20)
+
+## HU-8 — Alerta de stock mínimo (Administrador)
+- [ ] **HU-8 T1** Pantalla y botón: menú "Alertas de stock" del Administrador (quitar el deshabilitado del Almacenista), botón rojo/gris con contador en `header.php` (solo Administrador), recuadro en Inicio (W-20), vista `alertas/lista.php` (W-21 y W-22).
+- [ ] **HU-8 T2** Lógica: `AlertaController` (lista, contar), `Producto::listarStockBajo()`, `alertas-boton.js` (refresco cada 60 s), "Registrar pedido" → `pedido&a=nuevo&proveedor=&producto=` con proveedor preseleccionado y renglón resaltado (`PedidoController::nuevo` y `pedidos.js`). (Req. 22 a 25)
+
+## HU-9 — Corte de caja (Vendedor)
+- [ ] **HU-9 T1** Pantalla de corte y formato de impresión: `CorteController::index` con vista `corte/index.php` (W-23, W-24) y `corte/imprimir.php` (W-25).
+- [ ] **HU-9 T2** Lógica: consultas del corte en `Venta.php` (por método, canceladas, solo del vendedor y de hoy), `corte.js` con `reglas.diferenciaCorte`, acción `imprimir` que valida `contado` y recalcula. Nada se guarda. (Req. 26 a 29)
+
+## Técnico — Pruebas
+- [ ] **Técnico T1** `tests/VentaTest.php` con los casos de design.md → Pruebas; ejecutar `tests\run.php` y escribir el resultado en `docs/sprint3/pruebas_unitarias.md`.
+- [ ] **Técnico T2** Pruebas Node en `tests/js/reglas.test.js` (las nuevas + las anteriores) con `node --test tests/js/reglas.test.js`; agregar el resultado a `docs/sprint3/pruebas_unitarias.md`.
+- [ ] **Técnico T3** Probar cada requisito (Req. 15 a 29) con Vendedor y Administrador (y que el Almacenista no entre) y escribir la tabla requisito / resultado / observación en `docs/sprint3/pruebas_integrales.md`. Las ventas de prueba se hacen dentro de transacción con rollBack o se avisan al usuario para que él las limpie.
+- [ ] **Técnico T4** README: agregar los módulos Ventas, Alertas de stock y Corte de caja y cómo probarlos.
+
+## Criterios de "terminado" para cada tarea
+1. Sigue el wireframe y el diagrama.
+2. Validación en el navegador **y** en el controlador.
+3. Consultas parametrizadas; transacción cuando escribe en más de una tabla.
+4. No duplica lo que hacen los triggers (PHP no toca `inventario` ni `movimiento_inventario`).
+5. `php -l` sin errores y archivos UTF-8 sin BOM.
+6. El agente muestra la lista de archivos y los pasos para probar, y NO hace commit hasta "confirmado".
