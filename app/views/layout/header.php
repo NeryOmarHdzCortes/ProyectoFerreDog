@@ -7,7 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/ProyectoFerredog/public/assets/css/estilos.css">
 </head>
-<body class="layout-interno">
+<body class="layout-interno<?php echo !empty($claseCuerpo)
+    ? ' ' . htmlspecialchars($claseCuerpo, ENT_QUOTES, 'UTF-8')
+    : ''; ?>">
     <!-- Encabezado -->
     <header class="header-interno">
         <div class="header-logo">

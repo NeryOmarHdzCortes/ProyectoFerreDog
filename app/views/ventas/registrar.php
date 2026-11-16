@@ -2,6 +2,12 @@
     <h1 class="titulo-pagina">Registrar venta</h1>
     <p class="subtitulo-pagina">Busca productos, agrégalos con su cantidad y cobra.</p>
 
+    <?php if ($mensajeError !== ''): ?>
+        <div class="alerta-error" role="alert">
+            <?php echo htmlspecialchars($mensajeError, ENT_QUOTES, 'UTF-8'); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="venta-paneles">
         <section class="seccion-card venta-panel">
             <h2 class="venta-panel-titulo">Buscar producto</h2>
@@ -49,9 +55,15 @@
             <p class="venta-nota">No se muestran productos inactivos ni sin precio.</p>
         </section>
 
-        <section class="seccion-card venta-panel">
+        <form
+            id="formularioRegistroVenta"
+            class="seccion-card venta-panel"
+            method="POST"
+            action="/ProyectoFerredog/public/index.php?c=venta&amp;a=registrar"
+            novalidate
+        >
             <div class="venta-ticket-encabezado">
-                <h2 class="venta-panel-titulo">Ticket en construcción</h2>
+                <h2 class="venta-panel-titulo">Ticket de venta</h2>
                 <span>Folio: <?php echo htmlspecialchars($folioProvisional, ENT_QUOTES, 'UTF-8'); ?>
                     · <?php echo htmlspecialchars($fechaVenta, ENT_QUOTES, 'UTF-8'); ?></span>
             </div>
@@ -83,7 +95,7 @@
             <div class="venta-pago">
                 <div>
                     <label for="metodoPagoVenta" class="form-label">Método de pago</label>
-                    <select id="metodoPagoVenta" class="form-control">
+                    <select id="metodoPagoVenta" name="metodo" class="form-control">
                         <?php foreach ($metodosPago as $metodoPago): ?>
                             <option value="<?php echo (int) $metodoPago['Id_Metodo_Pago']; ?>">
                                 <?php echo htmlspecialchars($metodoPago['Nombre'], ENT_QUOTES, 'UTF-8'); ?>
@@ -96,6 +108,7 @@
                     <input
                         type="text"
                         id="pagoRecibidoVenta"
+                        name="pago"
                         class="form-control"
                         value="0.00"
                         inputmode="decimal"
@@ -109,17 +122,33 @@
             </div>
 
             <div class="venta-acciones">
-                <button type="button" class="btn btn-success btn-venta-registrar" disabled>
+                <button type="submit" class="btn btn-success btn-venta-registrar" disabled>
                     Registrar venta
                 </button>
                 <button type="button" class="btn btn-danger btn-venta-cancelar">
                     Cancelar venta
                 </button>
-                <button type="button" class="btn btn-secondary btn-venta-imprimir" disabled>
-                    Imprimir ticket
-                </button>
             </div>
-        </section>
+            <div id="productosRegistroVenta" hidden></div>
+        </form>
+    </div>
+
+    <div class="modal fade" id="modalConfirmarVenta" tabindex="-1" aria-labelledby="tituloModalConfirmarVenta" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="tituloModalConfirmarVenta">Confirmar venta</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    ¿Registrar la venta por <strong id="totalConfirmacionVenta">$0.00</strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Revisar ticket</button>
+                    <button type="button" class="btn btn-success" id="confirmarRegistroVenta">Confirmar venta</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal fade" id="modalCancelarVenta" tabindex="-1" aria-labelledby="tituloModalCancelarVenta" aria-hidden="true">

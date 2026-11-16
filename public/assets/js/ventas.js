@@ -15,9 +15,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const botonRegistrar = document.querySelector('.btn-venta-registrar');
     const botonCancelar = document.querySelector('.btn-venta-cancelar');
     const botonConfirmarCancelar = document.getElementById('confirmarCancelarVenta');
+    const formularioRegistro = document.getElementById('formularioRegistroVenta');
+    const modalConfirmarVenta = new bootstrap.Modal(document.getElementById('modalConfirmarVenta'));
+    const salidaTotalConfirmacion = document.getElementById('totalConfirmacionVenta');
+    const botonConfirmarRegistro = document.getElementById('confirmarRegistroVenta');
+    const contenedorProductosRegistro = document.getElementById('productosRegistroVenta');
     const modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelarVenta'));
     const productosEncontrados = new Map();
     const ticket = [];
+    let registroConfirmado = false;
     const formatoMoneda = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD'
@@ -335,6 +341,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
     campoPago.addEventListener('input', actualizarPago);
     selectorMetodoPago.addEventListener('change', actualizarPago);
+
+    formularioRegistro.addEventListener('submit', function (evento) {
+        evento.preventDefault();
+        actualizarPago();
+        if (ticket.length === 0 || botonRegistrar.disabled) {
+            return;
+        }
+
+        salidaTotalConfirmacion.textContent = salidaTotal.textContent;
+        modalConfirmarVenta.show();
+    });
+
+    botonConfirmarRegistro.addEventListener('click', function () {
+        if (registroConfirmado || ticket.length === 0 || botonRegistrar.disabled) {
+            return;
+        }
+
+        contenedorProductosRegistro.replaceChildren();
+        ticket.forEach(function (renglon, indice) {
+            [
+                { campo: 'id', valor: renglon.idProducto },
+                { campo: 'cantidad', valor: renglon.cantidad }
+            ].forEach(function (dato) {
+                const campoOculto = document.createElement('input');
+                campoOculto.type = 'hidden';
+                campoOculto.name = 'productos[' + indice + '][' + dato.campo + ']';
+                campoOculto.value = String(dato.valor);
+                contenedorProductosRegistro.appendChild(campoOculto);
+            });
+        });
+
+        registroConfirmado = true;
+        botonRegistrar.disabled = true;
+        modalConfirmarVenta.hide();
+        HTMLFormElement.prototype.submit.call(formularioRegistro);
+    });
 
     botonCancelar.addEventListener('click', function () {
         modalCancelar.show();

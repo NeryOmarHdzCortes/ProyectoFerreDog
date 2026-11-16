@@ -1271,3 +1271,113 @@ input:disabled+.slider {
         flex-direction: column;
     }
 }
+
+/* === TICKET DE VENTA (W-19) === */
+.pantalla-ticket .ticket-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 24px;
+    align-items: start;
+}
+
+.pantalla-ticket .ticket-resumen {
+    min-width: 0;
+}
+
+.pantalla-ticket .ticket-impresion {
+    width: 100%;
+    padding: 20px;
+    background: white;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: #111827;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+}
+
+.pantalla-ticket .ticket-impresion h2 {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.pantalla-ticket .ticket-subtitulo {
+    margin: 4px 0 12px;
+    text-align: center;
+}
+
+.pantalla-ticket .ticket-separador {
+    border: 0;
+    border-top: 1px dashed #9ca3af;
+    opacity: 1;
+    margin: 10px 0;
+}
+
+.pantalla-ticket .ticket-dato,
+.pantalla-ticket .ticket-renglon,
+.pantalla-ticket .ticket-total,
+.pantalla-ticket .ticket-pago {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.pantalla-ticket .ticket-renglon-nombre {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.pantalla-ticket .ticket-total {
+    margin-top: 12px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.pantalla-ticket .ticket-agradecimiento {
+    margin: 12px 0 0;
+    text-align: center;
+}
+
+.pantalla-ticket .ticket-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.pantalla-ticket .ticket-acciones .btn {
+    width: auto;
+}
+
+@media (max-width: 767px) {
+    .pantalla-ticket .ticket-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pantalla-ticket .ticket-impresion {
+        max-width: 360px;
+    }
+}
+
+@media print {
+    body.pantalla-ticket * {
+        visibility: hidden;
+    }
+
+    body.pantalla-ticket .ticket-impresion,
+    body.pantalla-ticket .ticket-impresion * {
+        visibility: visible;
+    }
+
+    body.pantalla-ticket .ticket-impresion {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 80mm;
+        max-width: 80mm;
+        border: 0;
+        box-shadow: none;
+    }
+}
