@@ -5,17 +5,26 @@
     <div class="venta-paneles">
         <section class="seccion-card venta-panel">
             <h2 class="venta-panel-titulo">Buscar producto</h2>
-            <div class="input-group venta-buscador">
-                <label for="busquedaProductoVenta" class="visually-hidden">Buscar producto por nombre o código de barras</label>
-                <input
-                    type="search"
-                    id="busquedaProductoVenta"
-                    class="form-control"
-                    placeholder="Nombre o código de barras"
-                    autocomplete="off"
-                >
-                <button type="button" class="btn btn-primary btn-venta-buscar">Buscar producto</button>
-            </div>
+            <form
+                id="formularioBusquedaVenta"
+                data-buscar-url="/ProyectoFerredog/public/index.php?c=venta&amp;a=buscar"
+                novalidate
+            >
+                <div class="input-group venta-buscador">
+                    <label for="busquedaProductoVenta" class="visually-hidden">Buscar producto por nombre o código de barras</label>
+                    <input
+                        type="search"
+                        id="busquedaProductoVenta"
+                        class="form-control"
+                        placeholder="Nombre o código de barras"
+                        maxlength="100"
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="btn btn-primary btn-venta-buscar">Buscar producto</button>
+                </div>
+            </form>
+
+            <div id="busquedaProductoVenta-error" class="alerta-error" role="alert" hidden></div>
 
             <div class="table-responsive venta-resultados">
                 <table class="table">
@@ -29,7 +38,7 @@
                             <th scope="col"><span class="visually-hidden">Acción</span></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="resultadosProductosVenta">
                         <tr>
                             <td colspan="6" class="text-center">Busca un producto para ver resultados</td>
                         </tr>
@@ -57,7 +66,7 @@
                             <th scope="col"><span class="visually-hidden">Quitar</span></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="renglonesTicketVenta">
                         <tr>
                             <td colspan="5" class="text-center">Agrega productos para iniciar la venta</td>
                         </tr>
@@ -67,7 +76,7 @@
 
             <div class="venta-total">
                 <strong>Total</strong>
-                <strong>$0.00</strong>
+                <strong id="totalVenta">$0.00</strong>
             </div>
 
             <div class="venta-pago">
@@ -112,3 +121,7 @@
         </section>
     </div>
 </main>
+<script
+    src="/ProyectoFerredog/public/assets/js/reglas.js?v=<?php echo filemtime(BASE_PATH . '/public/assets/js/reglas.js'); ?>"
+    defer
+></script>

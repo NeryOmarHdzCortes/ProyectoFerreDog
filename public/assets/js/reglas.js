@@ -78,9 +78,32 @@
         }, 0);
     }
 
+    function puedeAgregar(cantidadNueva, cantidadEnTicket, existencias) {
+        const nueva = Number(cantidadNueva);
+        const actual = Number(cantidadEnTicket);
+        const disponible = Number(existencias);
+
+        return Number.isSafeInteger(nueva)
+            && nueva > 0
+            && Number.isSafeInteger(actual)
+            && actual >= 0
+            && Number.isSafeInteger(disponible)
+            && disponible >= 0
+            && nueva + actual <= disponible;
+    }
+
+    function cambio(pago, importeTotal) {
+        return Math.round((Number(pago) - Number(importeTotal)) * 100) / 100;
+    }
+
+    function faltaPorPagar(pago, importeTotal) {
+        return Math.max(0, Math.round((Number(importeTotal) - Number(pago)) * 100) / 100);
+    }
+
     const Reglas = {
         limpiarEntero, limpiarDecimal, telefonoValido, correoValido,
-        puedePedirHasta, validarCantidad, subtotal, total
+        puedePedirHasta, validarCantidad, subtotal, total,
+        puedeAgregar, cambio, faltaPorPagar
     };
 
     if (typeof module !== 'undefined' && module.exports) {

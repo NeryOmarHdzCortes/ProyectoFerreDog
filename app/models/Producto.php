@@ -358,4 +358,24 @@ class Producto {
         $stmt = $this->pdo->query($sql);
         return $stmt->fetchColumn();
     }
+
+    /**
+     * Busca productos disponibles para el módulo de ventas.
+     */
+    public function buscarParaVenta($busqueda) {
+        $sql = "SELECT p.Id_Producto, p.Codigo_Barras, p.Nombre, p.Precio_Venta,
+                       COALESCE(i.Existencias, 0) AS Existencias
+                FROM productos p
+                LEFT JOIN inventario i ON i.Id_Producto = p.Id_Producto
+                WHERE p.Estado = 1
+                  AND p.Precio_Venta IS NOT NULL
+                  AND (p.Nombre LIKE ? OR p.Codigo_Barras LIKE ?)
+                ORDER BY p.Nombre
+                LIMIT 20";
+        $consulta = $this->pdo->prepare($sql);
+        $parametro = '%' . $busqueda . '%';
+        $consulta->execute([$parametro, $parametro]);
+
+        return $consulta->fetchAll();
+    }
 }
