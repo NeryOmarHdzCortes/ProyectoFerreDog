@@ -72,16 +72,17 @@
                     
                 <?php elseif ($rol === 'Vendedor'): ?>
                     <!-- Menú Vendedor -->
-                    <a href="/ProyectoFerredog/public/index.php?c=producto&a=lista" 
-                       class="menu-item <?php echo menuActivo('producto', $paginaActual); ?>">
-                        <span class="menu-icono">📦</span>
-                        <span>Productos <small>(solo consulta)</small></span>
-                    </a>
-                    
-                    <div class="menu-item menu-item-deshabilitado">
+                    <a href="/ProyectoFerredog/public/index.php?c=venta&a=index"
+                       class="menu-item <?php echo menuActivo('venta', $paginaActual); ?>">
                         <span class="menu-icono">💰</span>
-                        <span>Ventas <small class="badge-sprint">Sprint 3</small></span>
-                    </div>
+                        <span>Ventas</span>
+                    </a>
+
+                    <a href="/ProyectoFerredog/public/index.php?c=corte&a=index"
+                       class="menu-item <?php echo menuActivo('corte', $paginaActual); ?>">
+                        <span class="menu-icono">🧾</span>
+                        <span>Corte de caja</span>
+                    </a>
                 <?php endif; ?>
             </nav>
         </aside>

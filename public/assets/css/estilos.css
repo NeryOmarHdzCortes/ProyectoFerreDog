@@ -1106,3 +1106,155 @@ input:disabled+.slider {
     background-color: #f9fafb;
     border-color: var(--gris);
 }
+
+/* === INTERFAZ DE VENTAS (W-16) === */
+.pantalla-venta .venta-paneles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.pantalla-venta .venta-panel {
+    min-width: 0;
+}
+
+.pantalla-venta .venta-panel-titulo {
+    margin: 0 0 16px;
+    color: #111827;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.pantalla-venta .venta-buscador {
+    align-items: stretch;
+}
+
+.pantalla-venta .venta-buscador .form-control {
+    min-width: 0;
+}
+
+.pantalla-venta .btn-venta-buscar {
+    width: auto;
+    flex-shrink: 0;
+}
+
+.pantalla-venta .venta-resultados,
+.pantalla-venta .venta-ticket-tabla {
+    margin-top: 16px;
+}
+
+.pantalla-venta .venta-resultados .table,
+.pantalla-venta .venta-ticket-tabla .table {
+    margin-bottom: 0;
+}
+
+.pantalla-venta .venta-resultados th,
+.pantalla-venta .venta-ticket-tabla th {
+    white-space: nowrap;
+}
+
+.pantalla-venta .venta-nota {
+    margin: 12px 0 0;
+    color: var(--gris);
+    font-size: 12px;
+}
+
+.pantalla-venta .venta-ticket-encabezado {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pantalla-venta .venta-ticket-encabezado .venta-panel-titulo {
+    margin-bottom: 0;
+}
+
+.pantalla-venta .venta-ticket-encabezado > span {
+    color: var(--gris);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.pantalla-venta .venta-ticket-tabla th,
+.pantalla-venta .venta-ticket-tabla td {
+    padding-right: 8px;
+    padding-left: 8px;
+}
+
+.pantalla-venta .venta-ticket-tabla th:last-child,
+.pantalla-venta .venta-ticket-tabla td:last-child {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.pantalla-venta .venta-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 16px 0;
+    color: #111827;
+    font-size: 24px;
+}
+
+.pantalla-venta .venta-pago {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.pantalla-venta .venta-pago .form-label {
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.pantalla-venta .venta-cambio {
+    background-color: #f9fafb;
+    font-weight: 600;
+}
+
+.pantalla-venta .venta-acciones {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.pantalla-venta .venta-acciones .btn {
+    width: 100%;
+    padding: 8px 10px;
+}
+
+.pantalla-venta .btn-venta-registrar {
+    background-color: #16a34a;
+    color: white;
+}
+
+.pantalla-venta .btn-venta-cancelar {
+    background-color: #dc2626;
+    color: white;
+}
+
+.pantalla-venta .btn-venta-imprimir:disabled {
+    background-color: #9ca3af;
+    color: white;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+@media (max-width: 991px) {
+    .pantalla-venta .venta-paneles {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 575px) {
+    .pantalla-venta .venta-pago,
+    .pantalla-venta .venta-acciones {
+        grid-template-columns: 1fr;
+    }
+
+    .pantalla-venta .venta-ticket-encabezado {
+        flex-direction: column;
+    }
+}
