@@ -1159,6 +1159,19 @@ input:disabled+.slider {
     font-size: 12px;
 }
 
+.pantalla-venta .venta-alerta {
+    margin: 16px 0 0;
+}
+
+.pantalla-venta .venta-pago input[readonly] {
+    background-color: #f9fafb;
+}
+
+.pantalla-venta .venta-acciones .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 .pantalla-venta .venta-ticket-encabezado {
     display: flex;
     align-items: flex-start;

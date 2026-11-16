@@ -6,8 +6,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const campoBusqueda = document.getElementById('busquedaProductoVenta');
     const resultados = document.getElementById('resultadosProductosVenta');
     const errorBusqueda = document.getElementById('busquedaProductoVenta-error');
+    const alertaVenta = document.getElementById('alertaVenta');
     const renglonesTicket = document.getElementById('renglonesTicketVenta');
     const salidaTotal = document.getElementById('totalVenta');
+    const selectorMetodoPago = document.getElementById('metodoPagoVenta');
+    const campoPago = document.getElementById('pagoRecibidoVenta');
+    const salidaCambio = document.getElementById('cambioVenta');
+    const botonRegistrar = document.querySelector('.btn-venta-registrar');
+    const botonCancelar = document.querySelector('.btn-venta-cancelar');
+    const botonConfirmarCancelar = document.getElementById('confirmarCancelarVenta');
+    const modalCancelar = new bootstrap.Modal(document.getElementById('modalCancelarVenta'));
     const productosEncontrados = new Map();
     const ticket = [];
     const formatoMoneda = new Intl.NumberFormat('en-US', {
@@ -24,6 +32,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function mostrarErrorBusqueda(mensaje) {
         errorBusqueda.textContent = mensaje;
         errorBusqueda.hidden = mensaje === '';
+        campoBusqueda.classList.toggle('is-invalid', mensaje !== '');
+        campoBusqueda.setAttribute('aria-invalid', mensaje === '' ? 'false' : 'true');
+    }
+
+    function mostrarAlertaVenta(mensaje) {
+        alertaVenta.textContent = mensaje;
+        alertaVenta.hidden = mensaje === '';
     }
 
     function mostrarResultadosVacios(mensaje) {
@@ -41,6 +56,52 @@ document.addEventListener('DOMContentLoaded', function () {
             return { cantidad: renglon.cantidad, costo: renglon.precio };
         }));
         salidaTotal.textContent = formatoMoneda.format(total);
+        return total;
+    }
+
+    function actualizarPago() {
+        const importeTotal = actualizarTotal();
+        const metodo = selectorMetodoPago.selectedOptions[0]
+            ? selectorMetodoPago.selectedOptions[0].textContent.trim().toLocaleLowerCase()
+            : '';
+        const esEfectivo = metodo === 'efectivo';
+        campoPago.readOnly = !esEfectivo;
+        if (!esEfectivo) {
+            campoPago.value = importeTotal.toFixed(2);
+        }
+
+        if (ticket.length === 0) {
+            botonRegistrar.disabled = true;
+            salidaCambio.textContent = formatoMoneda.format(0);
+            mostrarAlertaVenta('');
+            return;
+        }
+
+        const pagoTexto = campoPago.value.trim();
+        if (!/^[0-9]+(?:\.[0-9]{1,2})?$/.test(pagoTexto)) {
+            botonRegistrar.disabled = true;
+            salidaCambio.textContent = '—';
+            mostrarAlertaVenta('Escribe el pago recibido.');
+            return;
+        }
+
+        const pago = Number(pagoTexto);
+        if (!Number.isFinite(pago) || pago < importeTotal) {
+            const faltante = window.Reglas.faltaPorPagar(pago, importeTotal);
+            botonRegistrar.disabled = true;
+            salidaCambio.textContent = '—';
+            mostrarAlertaVenta(
+                '⚠ Pago insuficiente: faltan ' + formatoMoneda.format(faltante)
+                    + '. No se puede registrar la venta.'
+            );
+            return;
+        }
+
+        botonRegistrar.disabled = false;
+        salidaCambio.textContent = formatoMoneda.format(
+            window.Reglas.cambio(pago, importeTotal)
+        );
+        mostrarAlertaVenta('');
     }
 
     function mostrarTicket() {
@@ -52,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
             celdaVacia.className = 'text-center';
             filaVacia.appendChild(celdaVacia);
             renglonesTicket.appendChild(filaVacia);
-            actualizarTotal();
+            actualizarPago();
             return;
         }
 
@@ -90,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
             renglonesTicket.appendChild(fila);
         });
 
-        actualizarTotal();
+        actualizarPago();
     }
 
     function mostrarResultados(productos) {
@@ -185,8 +246,9 @@ document.addEventListener('DOMContentLoaded', function () {
             '[data-cantidad-producto="' + idProducto + '"]'
         );
         const textoCantidad = campoCantidad ? campoCantidad.value.trim() : '';
-        if (!producto || !/^[0-9]+$/.test(textoCantidad) || Number(textoCantidad) <= 0) {
-            mostrarErrorBusqueda('La cantidad debe ser mayor a 0');
+        if (!producto || !/^[0-9]+$/.test(textoCantidad)
+            || !Number.isSafeInteger(Number(textoCantidad)) || Number(textoCantidad) <= 0) {
+            mostrarAlertaVenta('La cantidad debe ser mayor a 0');
             if (campoCantidad) {
                 campoCantidad.focus();
             }
@@ -196,6 +258,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const renglonExistente = ticket.find(function (renglon) {
             return String(renglon.idProducto) === idProducto;
         });
+        const cantidadEnTicket = renglonExistente ? renglonExistente.cantidad : 0;
+        const existencias = Number(producto.Existencias) || 0;
+        if (!window.Reglas.puedeAgregar(Number(textoCantidad), cantidadEnTicket, existencias)) {
+            mostrarAlertaVenta(
+                '⚠ Existencia insuficiente: solo hay ' + existencias
+                    + ' piezas. El producto no se agregó.'
+            );
+            campoCantidad.focus();
+            return;
+        }
+
         if (renglonExistente) {
             renglonExistente.cantidad += Number(textoCantidad);
         } else {
@@ -204,11 +277,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 codigo: String(producto.Codigo_Barras || ''),
                 nombre: String(producto.Nombre || ''),
                 precio: Number(producto.Precio_Venta),
-                existencias: Number(producto.Existencias) || 0,
+                existencias: existencias,
                 cantidad: Number(textoCantidad)
             });
         }
         mostrarErrorBusqueda('');
+        mostrarAlertaVenta('');
         mostrarTicket();
     });
 
@@ -224,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (indice !== -1) {
             ticket.splice(indice, 1);
+            mostrarAlertaVenta('');
             mostrarTicket();
         }
     });
@@ -239,11 +314,42 @@ document.addEventListener('DOMContentLoaded', function () {
             return producto.idProducto === idProducto;
         });
         const cantidadTexto = campo.value.trim();
-        if (!renglon || !/^[0-9]+$/.test(cantidadTexto) || Number(cantidadTexto) <= 0) {
+        if (!renglon || !/^[0-9]+$/.test(cantidadTexto)
+            || !Number.isSafeInteger(Number(cantidadTexto)) || Number(cantidadTexto) <= 0) {
+            mostrarAlertaVenta('La cantidad debe ser mayor a 0');
+            mostrarTicket();
+            return;
+        }
+        if (!window.Reglas.puedeAgregar(Number(cantidadTexto), 0, renglon.existencias)) {
+            mostrarAlertaVenta(
+                '⚠ Existencia insuficiente: solo hay ' + renglon.existencias
+                    + ' piezas. El producto no se agregó.'
+            );
             mostrarTicket();
             return;
         }
         renglon.cantidad = Number(cantidadTexto);
+        mostrarAlertaVenta('');
+        mostrarTicket();
+    });
+
+    campoPago.addEventListener('input', actualizarPago);
+    selectorMetodoPago.addEventListener('change', actualizarPago);
+
+    botonCancelar.addEventListener('click', function () {
+        modalCancelar.show();
+    });
+
+    botonConfirmarCancelar.addEventListener('click', function () {
+        ticket.splice(0, ticket.length);
+        campoPago.value = '0.00';
+        selectorMetodoPago.selectedIndex = 0;
+        mostrarErrorBusqueda('');
+        mostrarAlertaVenta('');
+        mostrarResultadosVacios('Busca un producto para ver resultados');
+        productosEncontrados.clear();
+        modalCancelar.hide();
+        actualizarPago();
         mostrarTicket();
     });
 

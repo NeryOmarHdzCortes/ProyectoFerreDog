@@ -45,6 +45,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="alertaVenta" class="alerta-error venta-alerta" role="alert" hidden></div>
             <p class="venta-nota">No se muestran productos inactivos ni sin precio.</p>
         </section>
 
@@ -119,6 +120,22 @@
                 </button>
             </div>
         </section>
+    </div>
+
+    <div class="modal fade" id="modalCancelarVenta" tabindex="-1" aria-labelledby="tituloModalCancelarVenta" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="tituloModalCancelarVenta">¿Cancelar la venta?</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">Se descartarán los productos del ticket.</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Seguir vendiendo</button>
+                    <button type="button" class="btn btn-danger" id="confirmarCancelarVenta">Cancelar venta</button>
+                </div>
+            </div>
+        </div>
     </div>
 </main>
 <script
